@@ -1,3 +1,5 @@
+import java.lang.invoke.LambdaForm.Compiled;
+
 buildscript {
     repositories { jcenter() }
     dependencies {
@@ -26,6 +28,7 @@ ext {
     slf4jVersion ='1.7.12'
     junitVersion = '4.12'
     logbackVersion = '1.0.13'
+    hikariVersion = '2.4.3'
 }
 
 version = "0.1-snapshot"
@@ -46,6 +49,8 @@ dependencies {
 
     // Other dependencies
     compile "ch.qos.logback:logback-classic:${logbackVersion}"
+    compile "com.zaxxer:HikariCP:${hikariVersion}"
+    
 
     // Test dependencies
     testCompile "junit:junit:${junitVersion}"
