@@ -14,12 +14,15 @@ import org.gooru.nucleus.handlers.resources.bootstrap.startup.Initializer;
 
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class DataSourceRegistry implements Initializer, Finalizer {
 
   private static final String DEFAULT_DATA_SOURCE = "defaultDataSource";
   private static final String DEFAULT_DATA_SOURCE_TYPE = "nucleus.ds.type";
   private static final String DS_HIKARI = "hikari";
+  private static final Logger LOGGER = LoggerFactory.getLogger(DataSourceRegistry.class);
   // All the elements in this array are supposed to be present in config file
   // as keys as we are going to initialize them with the value associated with
   // that key
@@ -30,11 +33,15 @@ public class DataSourceRegistry implements Initializer, Finalizer {
   @Override
   public void initializeComponent(Vertx vertx, JsonObject config) {
     // Skip if we are already initialized
+    LOGGER.debug("Initialization called upon.");
     if (!initialized) {
+      LOGGER.debug("May have to do initialization");
       // We need to do initialization, however, we are running it via verticle instance which is going to run in 
       // multiple threads hence we need to be safe for this operation
       synchronized (Holder.INSTANCE) {
-        if (!initialized) {          
+        LOGGER.debug("Will initialize after double checking");
+        if (!initialized) {
+          LOGGER.debug("Initializing now");
           for (String datasource : datasources) {
             JsonObject dbConfig = config.getJsonObject(datasource);
             if (dbConfig != null) {        
