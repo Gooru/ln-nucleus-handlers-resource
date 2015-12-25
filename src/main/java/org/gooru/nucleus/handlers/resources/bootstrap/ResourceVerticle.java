@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.resources.bootstrap;
 
+import io.vertx.core.Future;
 import org.gooru.nucleus.handlers.resources.bootstrap.shutdown.Finalizer;
 import org.gooru.nucleus.handlers.resources.bootstrap.shutdown.Finalizers;
 import org.gooru.nucleus.handlers.resources.bootstrap.startup.Initializer;
@@ -20,9 +21,17 @@ public class ResourceVerticle  extends AbstractVerticle {
   static final Logger LOGGER = LoggerFactory.getLogger(ResourceVerticle.class);
 
   @Override
-  public void start() throws Exception {
+  public void start(Future<Void> voidFuture) throws Exception {
     
-    startApplication();
+    vertx.executeBlocking(blockingFuture -> {
+      startApplication();
+    }, future -> {
+      if (future.succeeded()) {
+        voidFuture.complete();
+      } else {
+        voidFuture.fail("Not able to initialize the Resource machinery properly");
+      }
+    });
     
     EventBus eb = vertx.eventBus();
 
@@ -65,13 +74,12 @@ public class ResourceVerticle  extends AbstractVerticle {
   private void startApplication() {
     Initializers initializers = new Initializers();
     try {
-      
+      for (Initializer initializer : initializers) {
+        initializer.initializeComponent(vertx, config());
+      }
     } catch(IllegalStateException ie) {
       LOGGER.error("Error initializing application", ie);
       Runtime.getRuntime().halt(1);
-    }
-    for (Initializer initializer : initializers) {
-      initializer.initializeComponent(vertx, config());
     }
   }
 
