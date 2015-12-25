@@ -6,7 +6,7 @@
   	"password" : "nucleus",
   	"dataSourceClassName" : "org.postgresql.Driver",
   	"autoCommit" : false,
-  	"jdbcUrl" : "jdbc:postgresql://localhost:5432/nucleusdb",
+  	"jdbcUrl" : "jdbc:postgresql://localhost:5432/nucleus",
   	"maximumPoolSize" : 5
   }
 }
