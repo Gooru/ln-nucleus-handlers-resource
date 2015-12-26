@@ -1,4 +1,4 @@
-Building nucleus-server
+Building nucleus-resource
 ==============
 
 ## Prerequisites
