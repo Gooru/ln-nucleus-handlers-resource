@@ -18,7 +18,11 @@ public class MessageConstants {
   public static final String MSG_HTTP_ERROR = "http.error";
   public static final String MSG_HTTP_VALIDATION_ERROR = "http.validation.error";
   public static final String MSG_HTTP_HEADERS = "http.headers";
-  
+
+  // Event message structure : Operation + Body
+  public static final String MSG_EVENT_OP = "event.operation";
+  public static final String MSG_EVENT_BODY = "event.body";
+
   // Operation names: Also need to be updated in corresponding handlers
   public static final String MSG_OP_RES_GET = "resource.get";
   public static final String MSG_OP_RES_CREATE = "resource.create";
@@ -29,5 +33,10 @@ public class MessageConstants {
   public static final String RESP_CONTAINER_EVENT = "mb.event";
   
   public static final String RESOURCE_ID = "resourceId";
+
+  // Event operation names:
+  public static final String MSG_OP_EVT_RES_CREATE = "event.resource.create";
+  public static final String MSG_OP_EVT_RES_GET = "event.resource.get";
+
 
 }

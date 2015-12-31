@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.resources.processors;
 
+import org.gooru.nucleus.handlers.resources.processors.responses.transformers.ResponseTransformerBuilder;
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidRequestException;
 import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidUserException;
@@ -24,6 +25,7 @@ class MessageProcessor implements Processor {
   @Override
   public JsonObject process() {
     JsonObject result;
+    JsonObject eventData = null;
     try {
       if (message == null || !(message.body() instanceof JsonObject)) {
         LOGGER.error("Invalid message received, either null or body of message is not JsonObject ");
@@ -44,6 +46,7 @@ class MessageProcessor implements Processor {
         break;
       case MessageConstants.MSG_OP_RES_GET:
         result = processResourceGet();
+        eventData = generateEventForGet(result);
         break;
       case MessageConstants.MSG_OP_RES_UPDATE:
         result = processResourceUpdate();
@@ -52,34 +55,48 @@ class MessageProcessor implements Processor {
         LOGGER.error("Invalid operation type passed in, not able to handle");
         throw new InvalidRequestException();
       }
-      return result;
+      return new ResponseTransformerBuilder().build(result, eventData).transform();
     } catch (InvalidRequestException e) {
-      // TODO: handle exception
+      LOGGER.warn("Caught Invalid Request exception while processing", e);
+      return new ResponseTransformerBuilder().build(e).transform();
     } catch (InvalidUserException e) {
-      // TODO: handle exception
+      LOGGER.warn("Caught Invalid User while processing", e);
+      return new ResponseTransformerBuilder().build(e).transform();
+    } catch (Throwable throwable) {
+      LOGGER.warn("Caught unexpected exception here", throwable);
+      return new ResponseTransformerBuilder().build(throwable).transform();
     }
-
-    return null;
   }
 
   private JsonObject processResourceUpdate() {
     // TODO Auto-generated method stub
     String resourceId = message.headers().get(MessageConstants.RESOURCE_ID);
     
-    return null;    
+    return null;
   }
 
   private JsonObject processResourceGet() {
     // TODO Auto-generated method stub
     String resourceId = message.headers().get(MessageConstants.RESOURCE_ID);
     
-    return null;
+    JsonObject result = new JsonObject();
+    result.put("id", "13");
+    result.put("title", "Title of resource");
+    
+    return result;
   }
 
   private JsonObject processResourceCreate() {
     // TODO Auto-generated method stub
     
     return null;    
+  }
+
+  private JsonObject generateEventForGet(JsonObject input) {
+    JsonObject result = new JsonObject();
+    result.put(MessageConstants.MSG_EVENT_OP, MessageConstants.MSG_OP_EVT_RES_GET);
+    result.put(MessageConstants.MSG_EVENT_BODY, input);
+    return result;
   }
 
 }
