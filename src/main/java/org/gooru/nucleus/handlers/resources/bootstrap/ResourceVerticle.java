@@ -49,7 +49,7 @@ public class ResourceVerticle  extends AbstractVerticle {
         
         JsonObject eventData = result.getJsonObject(MessageConstants.RESP_CONTAINER_EVENT);
         if (eventData != null) {          
-          eb.publish(MessagebusEndpoints.MBEP_EVENT, eventData);
+          eb.send(MessagebusEndpoints.MBEP_EVENT, eventData);
         }
         
       });
