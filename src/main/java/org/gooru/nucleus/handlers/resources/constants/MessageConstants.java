@@ -20,7 +20,7 @@ public class MessageConstants {
   public static final String MSG_HTTP_HEADERS = "http.headers";
 
   // Event message structure : Operation + Body
-  public static final String MSG_EVENT_OP = "event.operation";
+  public static final String MSG_EVENT_NAME = "event.name";
   public static final String MSG_EVENT_BODY = "event.body";
 
   // Operation names: Also need to be updated in corresponding handlers

@@ -94,7 +94,7 @@ class MessageProcessor implements Processor {
 
   private JsonObject generateEventForGet(JsonObject input) {
     JsonObject result = new JsonObject();
-    result.put(MessageConstants.MSG_EVENT_OP, MessageConstants.MSG_OP_EVT_RES_GET);
+    result.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_EVT_RES_CREATE);
     result.put(MessageConstants.MSG_EVENT_BODY, input);
     return result;
   }
