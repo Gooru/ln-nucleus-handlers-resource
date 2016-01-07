@@ -44,10 +44,10 @@ class MessageProcessor implements Processor {
       switch (msgOp) {
       case MessageConstants.MSG_OP_RES_CREATE:
         result = processResourceCreate();
+        eventData = generateEventForCreate(result);
         break;
       case MessageConstants.MSG_OP_RES_GET:
         result = processResourceGet();
-      //  eventData = generateEventForGet(result);
         break;
       case MessageConstants.MSG_OP_RES_UPDATE:
         result = processResourceUpdate();
@@ -88,11 +88,10 @@ class MessageProcessor implements Processor {
   private JsonObject processResourceCreate() {
     // TODO Auto-generated method stub
     JsonObject inputData = ((JsonObject)message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
-    String result = new RepoBuilder().buildResourceRepo().createResource(inputData);    
-    return new JsonObject().put("content_id", result); 
+    return new RepoBuilder().buildResourceRepo().createResource(inputData);    
   }
 
-  private JsonObject generateEventForGet(JsonObject input) {
+  private JsonObject generateEventForCreate(JsonObject input) {
     JsonObject result = new JsonObject();
     result.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_EVT_RES_CREATE);
     result.put(MessageConstants.MSG_EVENT_BODY, input);

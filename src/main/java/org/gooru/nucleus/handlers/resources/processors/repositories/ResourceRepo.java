@@ -8,5 +8,5 @@ import io.vertx.core.json.JsonObject;
 public interface ResourceRepo {
  
     JsonObject getResourceById(String resourceId);
-    String createResource(JsonObject resourceData);
+    JsonObject createResource(JsonObject resourceData);
 }
