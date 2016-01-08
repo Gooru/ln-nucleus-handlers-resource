@@ -4,6 +4,7 @@ import org.gooru.nucleus.handlers.resources.processors.responses.transformers.Re
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidRequestException;
 import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidUserException;
+import org.gooru.nucleus.handlers.resources.processors.repositories.RepoBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,7 +47,7 @@ class MessageProcessor implements Processor {
         break;
       case MessageConstants.MSG_OP_RES_GET:
         result = processResourceGet();
-        eventData = generateEventForGet(result);
+      //  eventData = generateEventForGet(result);
         break;
       case MessageConstants.MSG_OP_RES_UPDATE:
         result = processResourceUpdate();
@@ -79,17 +80,16 @@ class MessageProcessor implements Processor {
     // TODO Auto-generated method stub
     String resourceId = message.headers().get(MessageConstants.RESOURCE_ID);
     
-    JsonObject result = new JsonObject();
-    result.put("id", "13");
-    result.put("title", "Title of resource");
+    JsonObject result = new RepoBuilder().buildResourceRepo().getResourceById(resourceId);
     
     return result;
   }
 
   private JsonObject processResourceCreate() {
     // TODO Auto-generated method stub
-    
-    return null;    
+    JsonObject inputData = ((JsonObject)message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
+    String result = new RepoBuilder().buildResourceRepo().createResource(inputData);    
+    return new JsonObject().put("content_id", result); 
   }
 
   private JsonObject generateEventForGet(JsonObject input) {
