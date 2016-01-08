@@ -9,5 +9,5 @@ import org.javalite.activejdbc.annotations.Table;
  */
 @Table("content")
 @IdName("content_id")
-public class ResourceReference extends Model {
+public class AJEntityResource extends Model {
 }
