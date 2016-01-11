@@ -9,4 +9,5 @@ public interface ResourceRepo {
  
     JsonObject getResourceById(String resourceId);
     JsonObject createResource(JsonObject resourceData);
+    JsonObject updateResource(JsonObject resourceData);
 }

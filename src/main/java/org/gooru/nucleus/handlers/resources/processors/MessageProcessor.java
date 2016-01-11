@@ -70,17 +70,15 @@ class MessageProcessor implements Processor {
   }
 
   private JsonObject processResourceUpdate() {
-    // TODO Auto-generated method stub
-    String resourceId = message.headers().get(MessageConstants.RESOURCE_ID);
-    
-    return null;
+    JsonObject inputData = ((JsonObject)message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
+     return new RepoBuilder().buildResourceRepo(userId, prefs).updateResource(inputData);    
   }
 
   private JsonObject processResourceGet() {
     // TODO Auto-generated method stub
     String resourceId = message.headers().get(MessageConstants.RESOURCE_ID);
     
-    JsonObject result = new RepoBuilder().buildResourceRepo().getResourceById(resourceId);
+    JsonObject result = new RepoBuilder().buildResourceRepo(userId, prefs).getResourceById(resourceId);
     
     return result;
   }
@@ -88,7 +86,7 @@ class MessageProcessor implements Processor {
   private JsonObject processResourceCreate() {
     // TODO Auto-generated method stub
     JsonObject inputData = ((JsonObject)message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
-    return new RepoBuilder().buildResourceRepo().createResource(inputData);    
+    return new RepoBuilder().buildResourceRepo(userId, prefs).createResource(inputData);    
   }
 
   private JsonObject generateEventForCreate(JsonObject input) {
