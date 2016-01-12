@@ -1,5 +1,7 @@
 package org.gooru.nucleus.handlers.resources.processors;
 
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
 import org.gooru.nucleus.handlers.resources.processors.responses.transformers.ResponseTransformerBuilder;
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidRequestException;
@@ -24,8 +26,8 @@ class MessageProcessor implements Processor {
   }
   
   @Override
-  public JsonObject process() {
-    JsonObject result;
+  public MessageResponse process() {
+    MessageResponse result;
     JsonObject eventData = null;
     try {
       if (message == null || !(message.body() instanceof JsonObject)) {
@@ -44,7 +46,7 @@ class MessageProcessor implements Processor {
       switch (msgOp) {
       case MessageConstants.MSG_OP_RES_CREATE:
         result = processResourceCreate();
-        eventData = generateEventForCreate(result);
+        eventData = generateEventForCreate(result.event());
         break;
       case MessageConstants.MSG_OP_RES_GET:
         result = processResourceGet();
@@ -56,34 +58,34 @@ class MessageProcessor implements Processor {
         LOGGER.error("Invalid operation type passed in, not able to handle");
         throw new InvalidRequestException();
       }
-      return new ResponseTransformerBuilder().build(result, eventData).transform();
+      return result;
     } catch (InvalidRequestException e) {
       LOGGER.warn("Caught Invalid Request exception while processing", e);
-      return new ResponseTransformerBuilder().build(e).transform();
+      return MessageResponseFactory.createInvalidRequestResponse();
     } catch (InvalidUserException e) {
       LOGGER.warn("Caught Invalid User while processing", e);
-      return new ResponseTransformerBuilder().build(e).transform();
+      return MessageResponseFactory.createForbiddenResponse();
     } catch (Throwable throwable) {
       LOGGER.warn("Caught unexpected exception here", throwable);
-      return new ResponseTransformerBuilder().build(throwable).transform();
+      return MessageResponseFactory.createInternalErrorResponse();
     }
   }
 
-  private JsonObject processResourceUpdate() {
+  private MessageResponse processResourceUpdate() {
     JsonObject inputData = ((JsonObject)message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
      return new RepoBuilder().buildResourceRepo(userId, prefs).updateResource(inputData);    
   }
 
-  private JsonObject processResourceGet() {
+  private MessageResponse processResourceGet() {
     // TODO Auto-generated method stub
     String resourceId = message.headers().get(MessageConstants.RESOURCE_ID);
     
-    JsonObject result = new RepoBuilder().buildResourceRepo(userId, prefs).getResourceById(resourceId);
+    MessageResponse result = new RepoBuilder().buildResourceRepo(userId, prefs).getResourceById(resourceId);
     
     return result;
   }
 
-  private JsonObject processResourceCreate() {
+  private MessageResponse processResourceCreate() {
     // TODO Auto-generated method stub
     JsonObject inputData = ((JsonObject)message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
     return new RepoBuilder().buildResourceRepo(userId, prefs).createResource(inputData);    

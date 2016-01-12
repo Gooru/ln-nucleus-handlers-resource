@@ -5,6 +5,8 @@ import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidUserExc
 import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidInputException;
 import org.gooru.nucleus.handlers.resources.processors.repositories.ResourceRepo;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
 import org.gooru.nucleus.handlers.resources.processors.responses.transformers.ResponseTransformerBuilder;
 import com.hazelcast.client.impl.exceptionconverters.GenericClientExceptionConverter;
 import org.javalite.activejdbc.Base;
@@ -22,6 +24,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.xml.soap.MessageFactory;
 
 /**
  * Created by ashish on 29/12/15.
@@ -63,7 +67,7 @@ public class AJResourceRepo implements ResourceRepo {
    */
 
   @Override
-  public JsonObject getResourceById(String resourceId) {
+  public MessageResponse getResourceById(String resourceId) {
     final String [] attributes = {"id", "title", "url", "creator_id", "narration",
                                   "description", "content_subformat", "metadata", 
                                   "taxonomy", "depth_of_knowledge", "thumbnail", "original_content_id",
@@ -78,22 +82,24 @@ public class AJResourceRepo implements ResourceRepo {
     LazyList<AJEntityResource> result = AJEntityResource.findBySQL(sql);
     LOGGER.debug("getResourceById : {} ", result.toString());
     
-    JsonObject returnValue = new JsonObject();
+    MessageResponse returnValue;
     if (result.size() > 0) {
-      returnValue = new AJResponseJsonTransformer().transform(result.get(0).toJson(false, attributes));
+      JsonObject toReturn = new AJResponseJsonTransformer().transform(result.get(0).toJson(false, attributes));
+      
+      LOGGER.debug("getResourceById : Return Value : {} ", toReturn);
+      returnValue = MessageResponseFactory.createGetSuccessResponse(toReturn);
     } else {
       LOGGER.warn("getResourceById : Resource with id : {} : not found", resourceId );
+      returnValue = MessageResponseFactory.createNotFoundResponse();
     }
     
     Base.close();
-    
-    LOGGER.debug("getResourceById : Return Value : {} ", returnValue);
     
     return returnValue;
   }
 
   @Override
-  public JsonObject createResource(JsonObject resourceData) {
+  public MessageResponse createResource(JsonObject resourceData) {
     Base.open(DataSourceRegistry.getInstance().getDefaultDataSource());
 
     LOGGER.debug("createResource : Resource  to create: " + resourceData);
@@ -105,27 +111,38 @@ public class AJResourceRepo implements ResourceRepo {
       JsonObject resourceIdWithURLDuplicates = getResourceByURL(createRes.getString("url"));
       if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
         LOGGER.debug("createResource : URL Exists <TBD> so cannot go ahead!");
-        return resourceIdWithURLDuplicates;
+        // <TBD>...what type of message to post back...
+        return MessageResponseFactory.createGetSuccessResponse(resourceIdWithURLDuplicates);
       }
       
       Base.openTransaction();
       if (createRes.insert()) {
         LOGGER.debug("createResource : Created resource ID: " + createRes.getString("id") );
         Base.commitTransaction();
-        return new JsonObject().put("id", createRes.getString("id") );
-      } else {
-        LOGGER.error("createResource : Failed to create <TBD> get cause from error object!");
-        Base.rollbackTransaction();
-      }
-      return null;
+        return MessageResponseFactory.createPostSuccessResponse("id", createRes.getString("id"));
+      } 
+      
+      Base.rollbackTransaction();
+      
+      return MessageResponseFactory.createValidationErrorResponse(createRes.errors());
     } catch (SQLException e) {
       LOGGER.warn("createResource : Caught sqlExceptions", e);
       Base.rollbackTransaction();
-      return null;
+      return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put("error", e.getMessage()));
+    } catch (InvalidInputException e) {
+      LOGGER.warn("createResource : Caught invalid input exception", e);
+      Base.rollbackTransaction();
+      return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put("error", e.getMessage()));
+    }catch (IllegalArgumentException iae) {
+      LOGGER.error(iae.getMessage());
+      return MessageResponseFactory.createInvalidRequestResponse();
+    } catch (IllegalStateException ise) {
+      LOGGER.error(ise.getMessage());
+      return MessageResponseFactory.createInternalErrorResponse();
     } catch (Throwable throwable) {
       LOGGER.warn("createResource : Caught unexpected exception here", throwable);
       Base.rollbackTransaction();
-      return null;
+      return MessageResponseFactory.createInternalErrorResponse();
     } finally {
       Base.close();
     }
@@ -133,7 +150,7 @@ public class AJResourceRepo implements ResourceRepo {
 
 
   @Override
-  public JsonObject updateResource(JsonObject resourceData) {
+  public MessageResponse updateResource(JsonObject resourceData) {
     String resourceId = null;
     AJEntityResource updateRes = null;
     JsonObject ownerDataToPropogateToCopies = null;
@@ -141,20 +158,20 @@ public class AJResourceRepo implements ResourceRepo {
       LOGGER.debug("updateResource : Resource to update : {} ", resourceData);
       if (resourceData == null) {
         LOGGER.error("updateResource : Invalid resource data input. Cannot update resource.");
-        throw new IllegalArgumentException("Invalid arguments");
+        return MessageResponseFactory.createInvalidRequestResponse();
       }
 
       resourceId = resourceData.getString("id");
       if (resourceId == null || resourceId.isEmpty()) {
         LOGGER.error("updateResource : Invalid resource ID input. Cannot update resource.");
-        throw new IllegalArgumentException("Invalid arguments");
+        return MessageResponseFactory.createInvalidRequestResponse();
       }
 
       // fetch resource from DB based on Id received
-      JsonObject fetchDBResourceData = getResourceById(resourceId);
+      JsonObject fetchDBResourceData = getResourceById(resourceId).reply();
       if (fetchDBResourceData == null) {
         LOGGER.error("updateResource : Object to update is not found in DB! Input resource ID: {} ", resourceId);
-        throw new IllegalStateException("Object to update is not found in DB!");
+        return MessageResponseFactory.createNotFoundResponse();
       }
 
       // check if owner and current user are the same
@@ -184,28 +201,16 @@ public class AJResourceRepo implements ResourceRepo {
         if (Arrays.asList(NOTNULL_FIELDS).contains(entry.getKey())) {
           if (mapValue == null) {
             LOGGER.error("Failed to update resource. Field : {} : is mandatory field and cannot be null.", entry.getKey());
-            throw new IllegalStateException("Failed to update resource. Field : " + entry.getKey() + " : is mandatory field and cannot be null.");
+            return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue()));
           }
         }
 
-        Object dbResValue = fetchDBResourceData.getValue(entry.getKey());
-        boolean valueChanged = hasValueChanged(entry.getKey(), entry.getValue(), dbResValue);
-        
-        LOGGER.debug("updateResource : value changed? Key: {}", valueChanged );
-        
         // mandatory and owner specific items may be overlapping...so do a
         // separate check not as ELSE condition
         if (!isOwner && Arrays.asList(OWNER_SPECIFIC_FIELDS).contains(entry.getKey())) {
-
           LOGGER.debug("updateResource : Not owner but changing owner specific fields?");
-          // compare input value and db value before deciding on throwing an
-          // error
-          // it is possible that value has not changed but passed here based on
-          // an earlier GET resource call
-          if (valueChanged) {
-            LOGGER.error("Error updating resource. Field: {} : can be updated only by owner of the resource.", entry.getKey());
-            throw new IllegalStateException("Error updating resource. Field : " + entry.getKey() + ": can be updated only by owner of the resource.");
-          }
+          LOGGER.error("Error updating resource. Field: {} : can be updated only by owner of the resource.", entry.getKey());
+          return MessageResponseFactory.createForbiddenResponse();
         } else if (isOwner && Arrays.asList(OWNER_SPECIFIC_FIELDS).contains(entry.getKey())) {
           // collect the DB fields to update for owner specific fields across all copies of this resource
           LOGGER.debug("updateResource : need to propagate this : {} : to other resources. ", entry.getKey() );
@@ -216,68 +221,76 @@ public class AJResourceRepo implements ResourceRepo {
         }
 
         // collect the attributes and values in the model.
-        if (valueChanged) {
-          
-          if (entry.getKey().equalsIgnoreCase("content_format")) {
-            if (mapValue == null || mapValue.isEmpty()) {
-              LOGGER.error("updateResource : content format is null! : {} ", entry.getKey());
-              return null;
-            } else {
+        if (entry.getKey().equalsIgnoreCase("content_format")) {
+          if (mapValue == null || mapValue.isEmpty()) {
+            LOGGER.error("updateResource : content format is null! : {} ", entry.getKey());
+            return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue()));
+          } else {
+            if (!mapValue.equalsIgnoreCase("resource")) { 
+              return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), "Unknown format!"));
+            }
+            else {
               PGobject contentFormat = new PGobject();
               contentFormat.setType("content_format_type");
               contentFormat.setValue(mapValue);
               updateRes.set(entry.getKey(), contentFormat);
             }
-          } else if (entry.getKey().equalsIgnoreCase("content_subformat")) {
-            if (mapValue == null || mapValue.isEmpty()) {
-              LOGGER.error("updateResource : content subformat is null! : {} ", entry.getKey());
-              return null;
-            } else {
+          }
+        } else if (entry.getKey().equalsIgnoreCase("content_subformat")) {
+          if (mapValue == null || mapValue.isEmpty()) {
+            LOGGER.error("updateResource : content subformat is null! : {} ", entry.getKey());
+            return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue()));
+          } else {
+            if (!mapValue.contains("resource")) { 
+              return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), "Unknown subformat!"));
+            }
+            else {
               PGobject contentSubformat = new PGobject();
               contentSubformat.setType("content_subformat_type");
               contentSubformat.setValue(mapValue);
               updateRes.set(entry.getKey(), contentSubformat);
             }
-          } else if (Arrays.asList(JSONB_FIELDS).contains(entry.getKey())) {
-            if (Arrays.asList(NOTNULL_FIELDS).contains(entry.getKey())) {
-              if (mapValue == null || mapValue.isEmpty()) {
-                LOGGER.error("updateResource : mandatory fields are null! : {} ", entry.getKey());
-                return null;
-              } else {
-                PGobject jsonbFields = new PGobject();
-                jsonbFields.setType("jsonb");
-                jsonbFields.setValue(mapValue);
-                updateRes.set(entry.getKey(), jsonbFields);
-              }
-            }
-
-          } else {
+          }
+        } else if (Arrays.asList(JSONB_FIELDS).contains(entry.getKey())) {
+          if (Arrays.asList(NOTNULL_FIELDS).contains(entry.getKey())) {
             if (mapValue == null || mapValue.isEmpty()) {
-              LOGGER.error("updateResource : mandatory fields in else is null! : {} ", entry.getKey());
-              return null;
+              LOGGER.error("updateResource : mandatory fields is null! : {} ", entry.getKey());
+              return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue()));
             } else {
-              updateRes.set(entry.getKey(), entry.getValue()); // intentionally
-                                                               // kept
-                                                               // entry.getValue
-                                                               // instead of
-                                                               // mapValue as it
-                                                               // needs to
-                                                               // handle other
-                                                               // datatypes like
-                                                               // boolean
+              PGobject jsonbFields = new PGobject();
+              jsonbFields.setType("jsonb");
+              jsonbFields.setValue(mapValue);
+              updateRes.set(entry.getKey(), jsonbFields);
             }
           }
+
+        } else {
+          if (mapValue == null || mapValue.isEmpty()) {
+            LOGGER.error("updateResource : mandatory fields in else is null! : {} ", entry.getKey());
+            return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue()));
+          } else {
+            updateRes.set(entry.getKey(), entry.getValue()); // intentionally
+                                                             // kept
+                                                             // entry.getValue
+                                                             // instead of
+                                                             // mapValue as it
+                                                             // needs to
+                                                             // handle other
+                                                             // datatypes like
+                                                             // boolean
+          }
         }
+          
       }
     } catch (IllegalArgumentException iae) {
       LOGGER.error(iae.getMessage());
-      return null;
+      return MessageResponseFactory.createInvalidRequestResponse();
     } catch (IllegalStateException ise) {
       LOGGER.error(ise.getMessage());
-      return null;
+      return MessageResponseFactory.createInternalErrorResponse();
     } catch (SQLException e) {
       LOGGER.error(e.getMessage());
-      return null;
+      return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put("error", e.getMessage()));
     }
 
     // now ready to commit to DB
@@ -287,14 +300,8 @@ public class AJResourceRepo implements ResourceRepo {
 
       if (updateRes != null) {
         if (!updateRes.save()) {
-          if (updateRes.hasErrors() ){
-            Map<String,String> errors = updateRes.errors();
-            for (Map.Entry<String, String> entry : errors.entrySet()) {
-              LOGGER.error("updateResource : Validation error. Field {} validation failed.", entry.getKey());              
-            }
-          }
           LOGGER.error("updateResource : Failed to update the database for the resource: {}", updateRes);
-          throw new SQLException("Update failed. Validation errors.");
+          return MessageResponseFactory.createValidationErrorResponse(updateRes.errors());
         } else {
           if (ownerDataToPropogateToCopies != null)
             updateOwnerDataToCopies(resourceId, ownerDataToPropogateToCopies);
@@ -304,29 +311,21 @@ public class AJResourceRepo implements ResourceRepo {
       Base.commitTransaction();
       // Base.close();
 
-    } catch (SQLException se) {
-      LOGGER.warn("updateResource : Caught SQLException", se);
-      Base.rollbackTransaction();
-      return null;
     } catch (IllegalArgumentException iae) {
       LOGGER.warn("updateResource : Caught IllegalArgumentException", iae);
       Base.rollbackTransaction();
-      return null;
+      return MessageResponseFactory.createInvalidRequestResponse();
     } catch (Throwable throwable) {
       LOGGER.warn("updateResource : Caught unexpected exception here", throwable);
       Base.rollbackTransaction();
-      return null;
+      return MessageResponseFactory.createInternalErrorResponse();
     } finally {
       Base.close();
     }
-    return resourceData;
+    return MessageResponseFactory.createPutSuccessResponse("id", resourceData.getString("id"));
   }
 
   
-  private boolean hasValueChanged(String fieldName, Object input, Object dbValue) {
-    return true;
-  }
-
   /*
    * updateOwnerDataToCopies: as a consequence of primary resource update, 
    *      we need to update the copies of this resource - but ONLY owner specific data items.
