@@ -5,14 +5,12 @@ import org.gooru.nucleus.handlers.resources.bootstrap.shutdown.Finalizer;
 import org.gooru.nucleus.handlers.resources.bootstrap.shutdown.Finalizers;
 import org.gooru.nucleus.handlers.resources.bootstrap.startup.Initializer;
 import org.gooru.nucleus.handlers.resources.bootstrap.startup.Initializers;
-import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.constants.MessagebusEndpoints;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorBuilder;
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 
@@ -40,17 +38,17 @@ public class ResourceVerticle  extends AbstractVerticle {
       LOGGER.debug("Received message: " + message.body());
       
       vertx.executeBlocking(future -> {
-        JsonObject result = new ProcessorBuilder(message).build().process();
+        MessageResponse result = new ProcessorBuilder(message).build().process();
         future.complete(result);
       }, res -> {
-        JsonObject result = (JsonObject) res.result();
-        DeliveryOptions options = new DeliveryOptions().addHeader(MessageConstants.MSG_OP_STATUS, result.getString(MessageConstants.MSG_OP_STATUS));
-        message.reply(result.getJsonObject(MessageConstants.RESP_CONTAINER_MBUS), options);
-        
-        JsonObject eventData = result.getJsonObject(MessageConstants.RESP_CONTAINER_EVENT);
-        if (eventData != null) {          
-          eb.send(MessagebusEndpoints.MBEP_EVENT, eventData);
+        MessageResponse result = (MessageResponse) res.result();
+        message.reply(result.reply(), result.deliveryOptions());
+
+        JsonObject eventData = result.event();
+        if (eventData != null) {
+          eb.publish(MessagebusEndpoints.MBEP_EVENT, eventData);
         }
+
         
       });
       
