@@ -2,14 +2,12 @@ package org.gooru.nucleus.handlers.resources.processors;
 
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.resources.processors.responses.transformers.ResponseTransformerBuilder;
+import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
-import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidRequestException;
-import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidUserException;
 import org.gooru.nucleus.handlers.resources.processors.repositories.RepoBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
 
@@ -17,9 +15,9 @@ class MessageProcessor implements Processor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Processor.class);
   private Message<Object> message;
-  String userId;
-  JsonObject prefs;
-  JsonObject request;
+  private String userId;
+  private JsonObject prefs;
+  private JsonObject request;
   
   public MessageProcessor(Message<Object> message) {
     this.message = message;
@@ -28,25 +26,17 @@ class MessageProcessor implements Processor {
   @Override
   public MessageResponse process() {
     MessageResponse result;
-    JsonObject eventData = null;
     try {
-      if (message == null || !(message.body() instanceof JsonObject)) {
-        LOGGER.error("Invalid message received, either null or body of message is not JsonObject ");
-        throw new InvalidRequestException();
+   // Validate the message itself
+      ExecutionResult<MessageResponse> validateResult = validateAndInitialize();
+      if (validateResult.isCompleted()) {
+        return validateResult.result();
       }
-      
+
       final String msgOp = message.headers().get(MessageConstants.MSG_HEADER_OP);
-      userId = ((JsonObject)message.body()).getString(MessageConstants.MSG_USER_ID);
-      if (userId == null) {
-        LOGGER.error("Invalid user id passed. Not authorized.");
-        throw new InvalidUserException();
-      }
-      prefs = ((JsonObject)message.body()).getJsonObject(MessageConstants.MSG_KEY_PREFS);
-      request = ((JsonObject)message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
       switch (msgOp) {
       case MessageConstants.MSG_OP_RES_CREATE:
         result = processResourceCreate();
-        eventData = generateEventForCreate(result.event());
         break;
       case MessageConstants.MSG_OP_RES_GET:
         result = processResourceGet();
@@ -56,46 +46,73 @@ class MessageProcessor implements Processor {
         break;
       default:
         LOGGER.error("Invalid operation type passed in, not able to handle");
-        throw new InvalidRequestException();
+        return MessageResponseFactory.createInvalidRequestResponse("Invalid resource id");
       }
       return result;
-    } catch (InvalidRequestException e) {
-      LOGGER.warn("Caught Invalid Request exception while processing", e);
-      return MessageResponseFactory.createInvalidRequestResponse();
-    } catch (InvalidUserException e) {
-      LOGGER.warn("Caught Invalid User while processing", e);
-      return MessageResponseFactory.createForbiddenResponse();
-    } catch (Throwable throwable) {
-      LOGGER.warn("Caught unexpected exception here", throwable);
+    } catch (Throwable e) {
+      LOGGER.error("Unhandled exception in processing", e);
       return MessageResponseFactory.createInternalErrorResponse();
     }
   }
 
   private MessageResponse processResourceUpdate() {
-    JsonObject inputData = ((JsonObject)message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
-     return new RepoBuilder().buildResourceRepo(userId, prefs).updateResource(inputData);    
+    ProcessorContext context = createContext();
+    if (context.resourceId() == null || context.resourceId().isEmpty()) {
+      LOGGER.error("Invalid request, resource id not available. Aborting");
+      return MessageResponseFactory.createInvalidRequestResponse("Invalid resource id");
+    }
+    if (context.request() == null || context.request().isEmpty()) {
+      LOGGER.error("Invalid request, json not available. Aborting");
+      return MessageResponseFactory.createInvalidRequestResponse("Invalid Json");
+    }
+    return new RepoBuilder().buildResourceRepo(context).updateResource();
   }
 
   private MessageResponse processResourceGet() {
-    // TODO Auto-generated method stub
-    String resourceId = message.headers().get(MessageConstants.RESOURCE_ID);
-    
-    MessageResponse result = new RepoBuilder().buildResourceRepo(userId, prefs).getResourceById(resourceId);
-    
-    return result;
-  }
+    ProcessorContext context = createContext();
+    if (context.resourceId() == null || context.resourceId().isEmpty()) {
+      LOGGER.error("Invalid request, resource id not available. Aborting");
+      return MessageResponseFactory.createInvalidRequestResponse("Invalid resource id");
+    }
+    return new RepoBuilder().buildResourceRepo(context).fetchResource(); // TODO Auto-generated method stub
+   }
 
   private MessageResponse processResourceCreate() {
-    // TODO Auto-generated method stub
-    JsonObject inputData = ((JsonObject)message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
-    return new RepoBuilder().buildResourceRepo(userId, prefs).createResource(inputData);    
+    ProcessorContext context = createContext();
+    
+    return new RepoBuilder().buildResourceRepo(context).createResource();
+   }
+
+  private ProcessorContext createContext() {
+    String resourceId = message.headers().get(MessageConstants.RESOURCE_ID);
+    return new ProcessorContext(userId, prefs, request, resourceId);
   }
 
-  private JsonObject generateEventForCreate(JsonObject input) {
-    JsonObject result = new JsonObject();
-    result.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_EVT_RES_CREATE);
-    result.put(MessageConstants.MSG_EVENT_BODY, input);
-    return result;
-  }
+  private ExecutionResult<MessageResponse> validateAndInitialize() {
+    if (message == null || !(message.body() instanceof JsonObject)) {
+      LOGGER.error("Invalid message received, either null or body of message is not JsonObject ");
+      return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(), ExecutionResult.ExecutionStatus.FAILED);
+    }
 
+    userId = ((JsonObject) message.body()).getString(MessageConstants.MSG_USER_ID);
+    if (userId == null) {
+      LOGGER.error("Invalid user id passed. Not authorized.");
+      return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(), ExecutionResult.ExecutionStatus.FAILED);
+    }
+    prefs = ((JsonObject) message.body()).getJsonObject(MessageConstants.MSG_KEY_PREFS);
+    request = ((JsonObject) message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
+  
+    if (prefs == null || prefs.isEmpty()) {
+      LOGGER.error("Invalid preferences obtained, probably not authorized properly");
+      return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(), ExecutionResult.ExecutionStatus.FAILED);
+    }
+
+    if (request == null) {
+      LOGGER.error("Invalid JSON payload on Message Bus");
+      return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(), ExecutionResult.ExecutionStatus.FAILED);
+    }
+
+    // All is well, continue processing
+    return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+  }
 }

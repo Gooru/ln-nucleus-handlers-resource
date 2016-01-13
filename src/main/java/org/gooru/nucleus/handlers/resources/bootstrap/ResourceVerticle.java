@@ -5,15 +5,12 @@ import org.gooru.nucleus.handlers.resources.bootstrap.shutdown.Finalizer;
 import org.gooru.nucleus.handlers.resources.bootstrap.shutdown.Finalizers;
 import org.gooru.nucleus.handlers.resources.bootstrap.startup.Initializer;
 import org.gooru.nucleus.handlers.resources.bootstrap.startup.Initializers;
-import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.constants.MessagebusEndpoints;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorBuilder;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 

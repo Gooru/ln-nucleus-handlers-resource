@@ -1,59 +1,19 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc;
 
-import org.gooru.nucleus.handlers.resources.app.components.DataSourceRegistry;
-import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidUserException;
-import org.gooru.nucleus.handlers.resources.processors.exceptions.InvalidInputException;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.DBHandlerBuilder;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.transactions.TransactionExecutor;
+import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.ResourceRepo;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
-import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.resources.processors.responses.transformers.ResponseTransformerBuilder;
-import com.hazelcast.client.impl.exceptionconverters.GenericClientExceptionConverter;
-import org.javalite.activejdbc.Base;
-import org.javalite.activejdbc.DB;
-import org.javalite.activejdbc.LazyList;
-import org.postgresql.util.PGobject;
-import java.sql.SQLException;
-import org.slf4j.LoggerFactory;
-import org.slf4j.Logger;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.xml.soap.MessageFactory;
 
 /**
  * Created by ashish on 29/12/15.
  */
 public class AJResourceRepo implements ResourceRepo {
-  private String userId;
-  private JsonObject prefs;
-
-  public AJResourceRepo(String userId, JsonObject prefs) {
-    this.userId = userId;
-    this.prefs = prefs;
-  }
+ 
+  private final ProcessorContext context;
   
-  private static final Logger LOGGER = LoggerFactory.getLogger(AJResourceRepo.class);
-
-  // jsonb fields relevant to resource
-  private static final String[] JSONB_FIELDS = { "metadata", "taxonomy", "depth_of_knowledge", "copyright_owner" };
-
-  // not null fields in db
-  private static final String[] NOTNULL_FIELDS =
-          { "id", "title", "creator_id", "original_creator_id", "content_format", "content_subformat", "visible_on_profile", "is_deleted" };
-
-  // <TBD> - Need to decide
-  // only owner (original creator of the resource) can change, which will have
-  // to update all the copied records of the resource
-  private static final String[] OWNER_SPECIFIC_FIELDS = { "title", "url", "description", "depth_of_knowledge", "content_format", "content_subformat" };
-
-
   /*
    * <TBD> Need to decide on owner specific editable fields, non-owner
    * non-editable and common fields UUID generation In update, Check if the user
@@ -65,90 +25,27 @@ public class AJResourceRepo implements ResourceRepo {
    * Taxonomy changes - which I am not clear - something to do with user preference while updating
    * Exception handling
    */
-
+  public AJResourceRepo(ProcessorContext context) {
+    this.context = context;
+  }
+  
   @Override
-  public MessageResponse getResourceById(String resourceId) {
-    final String [] attributes = {"id", "title", "url", "creator_id", "narration",
-                                  "description", "content_subformat", "metadata", 
-                                  "taxonomy", "depth_of_knowledge", "thumbnail", "original_content_id",
-                                  "is_frame_breaker", "is_broken", "is_deleted", "original_creator_id",
-                                  "is_copyright_owner", "copyright_owner", "visible_on_profile" };
-
-    String sql = "SELECT " + String.join(", ", attributes) + " FROM CONTENT WHERE id = '"
-                    + resourceId + "' AND content_format ='resource'";
-
-    Base.open(DataSourceRegistry.getInstance().getDefaultDataSource());
-    
-    LazyList<AJEntityResource> result = AJEntityResource.findBySQL(sql);
-    LOGGER.debug("getResourceById : {} ", result.toString());
-    
-    MessageResponse returnValue;
-    if (result.size() > 0) {
-      JsonObject toReturn = new AJResponseJsonTransformer().transform(result.get(0).toJson(false, attributes));
-      
-      LOGGER.debug("getResourceById : Return Value : {} ", toReturn);
-      returnValue = MessageResponseFactory.createGetSuccessResponse(toReturn);
-    } else {
-      LOGGER.warn("getResourceById : Resource with id : {} : not found", resourceId );
-      returnValue = MessageResponseFactory.createNotFoundResponse();
-    }
-    
-    Base.close();
-    
-    return returnValue;
+  public MessageResponse createResource() {
+    return new TransactionExecutor().executeTransaction(new DBHandlerBuilder().buildCreateResourceHandler(context));
   }
 
   @Override
-  public MessageResponse createResource(JsonObject resourceData) {
-    Base.open(DataSourceRegistry.getInstance().getDefaultDataSource());
-
-    LOGGER.debug("createResource : Resource  to create: " + resourceData);
-    try {
-      AJEntityResource createRes = new AJEntityResource();
-      populateEntityFromJson(resourceData, createRes);
-
-      LOGGER.debug("createResource : Creating resource From MAP  : {}", createRes.toInsert());
-      JsonObject resourceIdWithURLDuplicates = getResourceByURL(createRes.getString("url"));
-      if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
-        LOGGER.debug("createResource : URL Exists <TBD> so cannot go ahead!");
-        // <TBD>...what type of message to post back...
-        return MessageResponseFactory.createGetSuccessResponse(resourceIdWithURLDuplicates);
-      }
-      
-      Base.openTransaction();
-      if (createRes.insert()) {
-        LOGGER.debug("createResource : Created resource ID: " + createRes.getString("id") );
-        Base.commitTransaction();
-        return MessageResponseFactory.createPostSuccessResponse("id", createRes.getString("id"));
-      } 
-      
-      Base.rollbackTransaction();
-      
-      return MessageResponseFactory.createValidationErrorResponse(createRes.errors());
-    } catch (SQLException e) {
-      LOGGER.warn("createResource : Caught sqlExceptions", e);
-      Base.rollbackTransaction();
-      return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put("error", e.getMessage()));
-    } catch (InvalidInputException e) {
-      LOGGER.warn("createResource : Caught invalid input exception", e);
-      Base.rollbackTransaction();
-      return MessageResponseFactory.createValidationErrorResponse(new JsonObject().put("error", e.getMessage()));
-    }catch (IllegalArgumentException iae) {
-      LOGGER.error(iae.getMessage());
-      return MessageResponseFactory.createInvalidRequestResponse();
-    } catch (IllegalStateException ise) {
-      LOGGER.error(ise.getMessage());
-      return MessageResponseFactory.createInternalErrorResponse();
-    } catch (Throwable throwable) {
-      LOGGER.warn("createResource : Caught unexpected exception here", throwable);
-      Base.rollbackTransaction();
-      return MessageResponseFactory.createInternalErrorResponse();
-    } finally {
-      Base.close();
-    }
+  public MessageResponse updateResource() {
+    return new TransactionExecutor().executeTransaction(new DBHandlerBuilder().buildUpdateResourceHandler(context));
   }
 
+  @Override
+  public MessageResponse fetchResource() {
+    return new TransactionExecutor().executeTransaction(new DBHandlerBuilder().buildFetchResourceHandler(context));
 
+  }
+  
+   /*
   @Override
   public MessageResponse updateResource(JsonObject resourceData) {
     String resourceId = null;
@@ -168,7 +65,7 @@ public class AJResourceRepo implements ResourceRepo {
       }
 
       // fetch resource from DB based on Id received
-      JsonObject fetchDBResourceData = getResourceById(resourceId).reply();
+      JsonObject fetchDBResourceData = null;//getResourceById(resourceId).reply();
       if (fetchDBResourceData == null) {
         LOGGER.error("updateResource : Object to update is not found in DB! Input resource ID: {} ", resourceId);
         return MessageResponseFactory.createNotFoundResponse();
@@ -180,7 +77,7 @@ public class AJResourceRepo implements ResourceRepo {
       LOGGER.debug("updateResource : Original creator from DB = {}.", originalCreator);
       
       if ((originalCreator != null) && !originalCreator.isEmpty() )
-        isOwner = (userId.compareToIgnoreCase(originalCreator) == 0) ? true : false;      
+        isOwner = ((context.userId()).compareToIgnoreCase(originalCreator) == 0) ? true : false;      
       LOGGER.debug("updateResource : Ok! So, who is trying to update content? {}.", (isOwner) ? "owner" : "someone else");
       
       String mapValue = null;
@@ -303,8 +200,8 @@ public class AJResourceRepo implements ResourceRepo {
           LOGGER.error("updateResource : Failed to update the database for the resource: {}", updateRes);
           return MessageResponseFactory.createValidationErrorResponse(updateRes.errors());
         } else {
-          if (ownerDataToPropogateToCopies != null)
-            updateOwnerDataToCopies(resourceId, ownerDataToPropogateToCopies);
+         // if (ownerDataToPropogateToCopies != null)
+            //updateOwnerDataToCopies(resourceId, ownerDataToPropogateToCopies);
         }
       }
 
@@ -325,138 +222,6 @@ public class AJResourceRepo implements ResourceRepo {
     return MessageResponseFactory.createPutSuccessResponse("id", resourceData.getString("id"));
   }
 
+  */
   
-  /*
-   * updateOwnerDataToCopies: as a consequence of primary resource update, 
-   *      we need to update the copies of this resource - but ONLY owner specific data items.
-   *      
-   *      NOTE: This method does not do a lot of null checks etc; as all checks are already done by
-   *      UpdateResource() method.
-   */
-  private int updateOwnerDataToCopies(String ownerResourceId, JsonObject dataToBePropogated) {
-    LOGGER.debug("updateOwnerDataToCopies: OwnerResourceID {}", ownerResourceId);
-    int numRecsUpdated = 0;
-    String mapValue = null;
-    try {
-      
-      List<Object> params = new ArrayList<Object>();
-      String updateStmt = null;
-      for (Map.Entry<String, Object> entry : dataToBePropogated) {
-        mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
-        LOGGER.debug("updateOwnerDataToCopies: OwnerResourceID {}", entry.getKey());
-        
-        updateStmt = (updateStmt == null) ? 
-                                  entry.getKey() + " = ?" : 
-                                  updateStmt + ", " + entry.getKey() + " = ?";
-        
-        if (entry.getKey().equalsIgnoreCase("content_format")) {
-          if (!mapValue.equalsIgnoreCase("resource")) { 
-            throw new InvalidInputException("content format should always be a 'resource' but {} has been sent: " + mapValue);
-          }
-          else {
-            PGobject contentFormat = new PGobject();
-            contentFormat.setType("content_format_type");
-            contentFormat.setValue(entry.getValue().toString());
-            params.add(contentFormat);
-          }
-        } else if (entry.getKey().equalsIgnoreCase("content_subformat")) {
-          if (!mapValue.contains("resource")) { 
-            throw new InvalidInputException("content sub format is not a valid resource format ; {} has been sent: " + mapValue);
-          }
-          else {
-            PGobject contentSubformat = new PGobject();
-            contentSubformat.setType("content_subformat_type");
-            contentSubformat.setValue(entry.getValue().toString());
-            params.add(contentSubformat);
-          }
-        } else if (Arrays.asList(JSONB_FIELDS).contains(entry.getKey())) {
-          PGobject jsonbFields = new PGobject();
-          jsonbFields.setType("jsonb");
-          jsonbFields.setValue(entry.getValue().toString());
-          params.add(jsonbFields);
-        } else {
-          params.add(entry.getValue());
-        }
-      }
-            
-      LOGGER.debug("updateOwnerDataToCopies: Statement {}", updateStmt);
-      
-      if (updateStmt != null) {
-        params.add(ownerResourceId);
-        numRecsUpdated = AJEntityResource.update(updateStmt, "original_content_id = ?", params.toArray() );
-        LOGGER.debug("updateOwnerDataToCopies : Update successful. Number of records updated: {}", numRecsUpdated);        
-      }
-      
-   } catch (SQLException se) {
-     LOGGER.warn("updateOwnerDataToCopies : Caught SQLException", se);
-     return numRecsUpdated;
-   } catch (IllegalArgumentException iae) {
-     LOGGER.warn("updateOwnerDataToCopies : Caught IllegalArgumentException", iae);
-     return numRecsUpdated;
-   } catch (Throwable throwable) {
-     LOGGER.warn("updateOwnerDataToCopies : Caught unexpected exception here", throwable);
-     return numRecsUpdated;
-   }
-    
-   return numRecsUpdated;
-  }
-  
-  /*
-   * populateEntityFromJson : throws exceptions
-   */
-  private void populateEntityFromJson(JsonObject inputJson, AJEntityResource resource) throws InvalidInputException, SQLException {
-    String mapValue = null;
-    for (Map.Entry<String, Object> entry : inputJson) {
-      mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
-      if (mapValue == null || mapValue.isEmpty()) {
-        throw new InvalidInputException("Null value input for : " + entry.getKey());
-      }
-
-      if (entry.getKey().equalsIgnoreCase("content_format")) {
-        if (!mapValue.equalsIgnoreCase("resource")) { 
-          throw new InvalidInputException("content format should always be a 'resource' but {} has been sent: " + mapValue);
-        }
-        else {
-          PGobject contentFormat = new PGobject();
-          contentFormat.setType("content_format_type");
-          contentFormat.setValue(mapValue);
-          resource.set(entry.getKey(), contentFormat);
-        }
-      } else if (entry.getKey().equalsIgnoreCase("content_subformat")) {
-        if (!mapValue.contains("resource")) { 
-          throw new InvalidInputException("content sub format is not a valid resource format ; {} has been sent: " + mapValue);
-        }
-        else {
-          PGobject contentSubformat = new PGobject();
-          contentSubformat.setType("content_subformat_type");
-          contentSubformat.setValue(mapValue);
-          resource.set(entry.getKey(), contentSubformat);
-        }
-      } else if (Arrays.asList(JSONB_FIELDS).contains(entry.getKey())) {
-        if (Arrays.asList(NOTNULL_FIELDS).contains(entry.getKey())) {
-          PGobject jsonbFields = new PGobject();
-          jsonbFields.setType("jsonb");
-          jsonbFields.setValue(mapValue);
-          resource.set(entry.getKey(), jsonbFields);
-        }
-      } else {
-        resource.set(entry.getKey(), entry.getValue());
-      }
-    }
-    return;
-  }
-
-  private JsonObject getResourceByURL(String inputURL) {
-    String sql = "select id from content where url = '" + inputURL + "' AND content_format ='resource' AND original_content_id is null";
-    LazyList<AJEntityResource> result = AJEntityResource.findBySQL(sql);
-    LOGGER.debug("getResourceById ! : {} ", result.toString());
-
-    JsonObject returnValue = null;
-    if (result.size() > 0) {
-      returnValue = new JsonObject().put("duplicate_ids", new JsonArray(result.collect("id")));
-      return returnValue;
-    }
-    return returnValue;
-  }
-
 }
