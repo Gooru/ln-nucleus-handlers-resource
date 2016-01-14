@@ -1,33 +1,32 @@
 package org.gooru.nucleus.handlers.resources.processors;
 
-import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
-import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
-import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
-import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
-import org.gooru.nucleus.handlers.resources.processors.repositories.RepoBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
+import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
+import org.gooru.nucleus.handlers.resources.processors.repositories.RepoBuilder;
+import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 class MessageProcessor implements Processor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Processor.class);
-  private Message<Object> message;
+  private final Message<Object> message;
   private String userId;
   private JsonObject prefs;
   private JsonObject request;
-  
+
   public MessageProcessor(Message<Object> message) {
     this.message = message;
   }
-  
+
   @Override
   public MessageResponse process() {
     MessageResponse result;
     try {
-   // Validate the message itself
+      // Validate the message itself
       ExecutionResult<MessageResponse> validateResult = validateAndInitialize();
       if (validateResult.isCompleted()) {
         return validateResult.result();
@@ -35,18 +34,18 @@ class MessageProcessor implements Processor {
 
       final String msgOp = message.headers().get(MessageConstants.MSG_HEADER_OP);
       switch (msgOp) {
-      case MessageConstants.MSG_OP_RES_CREATE:
-        result = processResourceCreate();
-        break;
-      case MessageConstants.MSG_OP_RES_GET:
-        result = processResourceGet();
-        break;
-      case MessageConstants.MSG_OP_RES_UPDATE:
-        result = processResourceUpdate();
-        break;
-      default:
-        LOGGER.error("Invalid operation type passed in, not able to handle");
-        return MessageResponseFactory.createInvalidRequestResponse("Invalid resource id");
+        case MessageConstants.MSG_OP_RES_CREATE:
+          result = processResourceCreate();
+          break;
+        case MessageConstants.MSG_OP_RES_GET:
+          result = processResourceGet();
+          break;
+        case MessageConstants.MSG_OP_RES_UPDATE:
+          result = processResourceUpdate();
+          break;
+        default:
+          LOGGER.error("Invalid operation type passed in, not able to handle");
+          return MessageResponseFactory.createInvalidRequestResponse("Invalid resource id");
       }
       return result;
     } catch (Throwable e) {
@@ -75,13 +74,13 @@ class MessageProcessor implements Processor {
       return MessageResponseFactory.createInvalidRequestResponse("Invalid resource id");
     }
     return new RepoBuilder().buildResourceRepo(context).fetchResource(); // TODO Auto-generated method stub
-   }
+  }
 
   private MessageResponse processResourceCreate() {
     ProcessorContext context = createContext();
-    
+
     return new RepoBuilder().buildResourceRepo(context).createResource();
-   }
+  }
 
   private ProcessorContext createContext() {
     String resourceId = message.headers().get(MessageConstants.RESOURCE_ID);
@@ -101,7 +100,7 @@ class MessageProcessor implements Processor {
     }
     prefs = ((JsonObject) message.body()).getJsonObject(MessageConstants.MSG_KEY_PREFS);
     request = ((JsonObject) message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
-  
+
     if (prefs == null || prefs.isEmpty()) {
       LOGGER.error("Invalid preferences obtained, probably not authorized properly");
       return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(), ExecutionResult.ExecutionStatus.FAILED);

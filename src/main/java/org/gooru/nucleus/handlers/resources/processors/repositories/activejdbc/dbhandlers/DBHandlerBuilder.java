@@ -6,7 +6,7 @@ import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
  * Created by ashish on 11/1/16.
  */
 public class DBHandlerBuilder {
- 
+
   public DBHandler buildFetchResourceHandler(ProcessorContext context) {
     return new FetchResourceHandler(context);
   }
