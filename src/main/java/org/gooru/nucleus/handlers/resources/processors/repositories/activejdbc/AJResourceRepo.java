@@ -1,9 +1,9 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc;
 
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.DBHandlerBuilder;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.transactions.TransactionExecutor;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.ResourceRepo;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.DBHandlerBuilder;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.transactions.TransactionExecutor;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 
 
@@ -11,9 +11,9 @@ import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse
  * Created by ashish on 29/12/15.
  */
 public class AJResourceRepo implements ResourceRepo {
- 
+
   private final ProcessorContext context;
-  
+
   /*
    * <TBD> Need to decide on owner specific editable fields, non-owner
    * non-editable and common fields UUID generation In update, Check if the user
@@ -28,7 +28,7 @@ public class AJResourceRepo implements ResourceRepo {
   public AJResourceRepo(ProcessorContext context) {
     this.context = context;
   }
-  
+
   @Override
   public MessageResponse createResource() {
     return new TransactionExecutor().executeTransaction(new DBHandlerBuilder().buildCreateResourceHandler(context));
@@ -223,5 +223,5 @@ public class AJResourceRepo implements ResourceRepo {
   }
 
   */
-  
+
 }

@@ -11,7 +11,7 @@ public class ProcessorContext {
   final private JsonObject prefs;
   final private JsonObject request;
   final private String resourceId;
- 
+
   public ProcessorContext(String userId, JsonObject prefs, JsonObject request, String resourceId) {
     if (prefs == null || userId == null || prefs.isEmpty()) {
       throw new IllegalStateException("Processor Context creation failed because of invalid values");

@@ -1,6 +1,9 @@
 package org.gooru.nucleus.handlers.resources.bootstrap;
 
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
+import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.resources.bootstrap.shutdown.Finalizer;
 import org.gooru.nucleus.handlers.resources.bootstrap.shutdown.Finalizers;
 import org.gooru.nucleus.handlers.resources.bootstrap.startup.Initializer;
@@ -10,17 +13,14 @@ import org.gooru.nucleus.handlers.resources.processors.ProcessorBuilder;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.vertx.core.AbstractVerticle;
-import io.vertx.core.eventbus.EventBus;
-import io.vertx.core.json.JsonObject;
 
-public class ResourceVerticle  extends AbstractVerticle {
+public class ResourceVerticle extends AbstractVerticle {
 
   static final Logger LOGGER = LoggerFactory.getLogger(ResourceVerticle.class);
 
   @Override
   public void start(Future<Void> voidFuture) throws Exception {
-    
+
     vertx.executeBlocking(blockingFuture -> {
       startApplication();
     }, future -> {
@@ -30,13 +30,13 @@ public class ResourceVerticle  extends AbstractVerticle {
         voidFuture.fail("Not able to initialize the Resource machinery properly");
       }
     });
-    
+
     EventBus eb = vertx.eventBus();
 
     eb.consumer(MessagebusEndpoints.MBEP_RESOURCE, message -> {
 
       LOGGER.debug("Received message: " + message.body());
-      
+
       vertx.executeBlocking(future -> {
         MessageResponse result = new ProcessorBuilder(message).build().process();
         future.complete(result);
@@ -49,13 +49,13 @@ public class ResourceVerticle  extends AbstractVerticle {
           eb.publish(MessagebusEndpoints.MBEP_EVENT, eventData);
         }
 
-        
+
       });
-      
+
 
     }).completionHandler(result -> {
       if (result.succeeded()) {
-        LOGGER.info("Resource end point ready to listen");        
+        LOGGER.info("Resource end point ready to listen");
       } else {
         LOGGER.error("Error registering the resource handler. Halting the Resource machinery");
         Runtime.getRuntime().halt(1);
@@ -75,7 +75,7 @@ public class ResourceVerticle  extends AbstractVerticle {
       for (Initializer initializer : initializers) {
         initializer.initializeComponent(vertx, config());
       }
-    } catch(IllegalStateException ie) {
+    } catch (IllegalStateException ie) {
       LOGGER.error("Error initializing application", ie);
       Runtime.getRuntime().halt(1);
     }
@@ -83,10 +83,10 @@ public class ResourceVerticle  extends AbstractVerticle {
 
   private void shutDownApplication() {
     Finalizers finalizers = new Finalizers();
-    for (Finalizer finalizer : finalizers ) {
+    for (Finalizer finalizer : finalizers) {
       finalizer.finalizeComponent();
     }
-    
+
   }
 
 }

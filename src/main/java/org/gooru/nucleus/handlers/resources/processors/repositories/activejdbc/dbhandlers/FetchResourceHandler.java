@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
+import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.ResourceRepo;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
@@ -8,8 +9,6 @@ import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import io.vertx.core.json.JsonObject;
 
 /**
  * Created by ashish on 11/1/16.
@@ -25,7 +24,7 @@ class FetchResourceHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> checkSanity() {
-    if ( context.resourceId() == null || context.resourceId().isEmpty()) {
+    if (context.resourceId() == null || context.resourceId().isEmpty()) {
       LOGGER.debug("checkSanity() failed");
       return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
@@ -40,15 +39,15 @@ class FetchResourceHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> executeRequest() {
-   AJEntityResource result = DBHelper.getInstance().getResourceById(context.resourceId());
-           
-    if ( result != null) {
+    AJEntityResource result = DBHelper.getInstance().getResourceById(context.resourceId());
+
+    if (result != null) {
       JsonObject toReturn = new AJResponseJsonTransformer().transform(result.toJson(false, ResourceRepo.attributes));
       LOGGER.debug("FetchResourceHandler : Return Value : {} ", toReturn);
       return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(toReturn), ExecutionResult.ExecutionStatus.SUCCESSFUL);
     }
-    
-    LOGGER.warn("FetchResourceHandler : Resource with id : {} : not found", context.resourceId() );
+
+    LOGGER.warn("FetchResourceHandler : Resource with id : {} : not found", context.resourceId());
     return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(), ExecutionResult.ExecutionStatus.FAILED);
   }
 
