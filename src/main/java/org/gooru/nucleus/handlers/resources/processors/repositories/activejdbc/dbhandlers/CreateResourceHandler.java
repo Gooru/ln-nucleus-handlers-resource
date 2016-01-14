@@ -12,9 +12,6 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 
-/**
- * Created by ashish on 11/1/16.
- */
 class CreateResourceHandler implements DBHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(CreateResourceHandler.class);

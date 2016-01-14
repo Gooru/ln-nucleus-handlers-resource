@@ -15,9 +15,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.Map;
 
-/**
- * Created by ashish on 11/1/16.
- */
+
 class UpdateResourceHandler implements DBHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(UpdateResourceHandler.class);

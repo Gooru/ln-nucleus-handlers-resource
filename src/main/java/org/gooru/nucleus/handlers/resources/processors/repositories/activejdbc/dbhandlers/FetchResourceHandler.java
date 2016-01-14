@@ -10,9 +10,6 @@ import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * Created by ashish on 11/1/16.
- */
 class FetchResourceHandler implements DBHandler {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(FetchResourceHandler.class);

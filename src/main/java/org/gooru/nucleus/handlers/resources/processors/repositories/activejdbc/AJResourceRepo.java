@@ -7,9 +7,6 @@ import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.t
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 
 
-/**
- * Created by ashish on 29/12/15.
- */
 public class AJResourceRepo implements ResourceRepo {
 
   private final ProcessorContext context;

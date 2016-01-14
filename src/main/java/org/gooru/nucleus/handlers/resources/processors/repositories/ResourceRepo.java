@@ -3,9 +3,6 @@ package org.gooru.nucleus.handlers.resources.processors.repositories;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 
 
-/**
- * Created by ashish on 29/12/15.
- */
 public interface ResourceRepo {
 
   String RESOURCE_ID = "id";
