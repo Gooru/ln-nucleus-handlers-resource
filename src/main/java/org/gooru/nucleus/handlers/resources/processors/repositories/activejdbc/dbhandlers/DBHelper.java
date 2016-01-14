@@ -57,7 +57,6 @@ public class DBHelper {
     JsonObject returnValue = null;
     if (result.size() > 0) {
       returnValue = new JsonObject().put("duplicate_ids", new JsonArray(result.collect("id")));
-      return returnValue;
     }
     return returnValue;
   }
@@ -66,7 +65,7 @@ public class DBHelper {
    * populateEntityFromJson : throws exceptions
    */
   protected void populateEntityFromJson(JsonObject inputJson, AJEntityResource resource) throws SQLException, IllegalArgumentException {
-    String mapValue = null;
+    String mapValue;
     for (Map.Entry<String, Object> entry : inputJson) {
       mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
 
@@ -103,7 +102,6 @@ public class DBHelper {
         resource.set(entry.getKey(), entry.getValue());
       }
     }
-    return;
   }
 
   /*
@@ -118,8 +116,8 @@ public class DBHelper {
     throws SQLException, IllegalArgumentException {
     LOGGER.debug("updateOwnerDataToCopies: OwnerResourceID {}", ownerResourceId);
     int numRecsUpdated = 0;
-    String mapValue = null;
-    List<Object> params = new ArrayList<Object>();
+    String mapValue;
+    List<Object> params = new ArrayList<>();
     String updateStmt = null;
     for (Map.Entry<String, Object> entry : dataToBePropogated) {
       mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
@@ -168,7 +166,7 @@ public class DBHelper {
   }
 
   private static class Holder {
-    private static DBHelper INSTANCE = new DBHelper();
+    private static final DBHelper INSTANCE = new DBHelper();
   }
 
 }

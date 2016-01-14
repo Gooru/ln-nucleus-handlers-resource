@@ -21,9 +21,7 @@ public class ResourceVerticle extends AbstractVerticle {
   @Override
   public void start(Future<Void> voidFuture) throws Exception {
 
-    vertx.executeBlocking(blockingFuture -> {
-      startApplication();
-    }, future -> {
+    vertx.executeBlocking(blockingFuture -> startApplication(), future -> {
       if (future.succeeded()) {
         voidFuture.complete();
       } else {

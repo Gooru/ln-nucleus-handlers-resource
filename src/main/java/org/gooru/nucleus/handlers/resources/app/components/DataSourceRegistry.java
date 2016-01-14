@@ -25,8 +25,8 @@ public class DataSourceRegistry implements Initializer, Finalizer {
   // All the elements in this array are supposed to be present in config file
   // as keys as we are going to initialize them with the value associated with
   // that key
-  private List<String> datasources = Arrays.asList(DEFAULT_DATA_SOURCE);
-  private Map<String, DataSource> registry = new HashMap<>();
+  private final List<String> datasources = Arrays.asList(DEFAULT_DATA_SOURCE);
+  private final Map<String, DataSource> registry = new HashMap<>();
 
   private DataSourceRegistry() {
     // TODO Auto-generated constructor stub
@@ -185,7 +185,7 @@ public class DataSourceRegistry implements Initializer, Finalizer {
   }
 
   private static class Holder {
-    private static DataSourceRegistry INSTANCE = new DataSourceRegistry();
+    private static final DataSourceRegistry INSTANCE = new DataSourceRegistry();
   }
 
 }

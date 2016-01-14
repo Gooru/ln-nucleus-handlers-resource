@@ -36,23 +36,23 @@ public interface ResourceRepo {
   String IS_BROKEN = "is_broken";
   String IS_DELETED = "is_deleted";
 
-  final String VALID_CONTENT_FORMAT_FOR_RESOURCE = "resource";
-  final String JSONB_FORMAT = "jsonb";
+  String VALID_CONTENT_FORMAT_FOR_RESOURCE = "resource";
+  String JSONB_FORMAT = "jsonb";
 
   // jsonb fields relevant to resource
-  static final String[] JSONB_FIELDS = {METADATA, TAXONOMY, DEPTH_OF_KNOWLEDGE, COPYRIGHT_OWNER};
+  String[] JSONB_FIELDS = {METADATA, TAXONOMY, DEPTH_OF_KNOWLEDGE, COPYRIGHT_OWNER};
 
   // not null fields in db
-  static final String[] NOTNULL_FIELDS =
+  String[] NOTNULL_FIELDS =
     {RESOURCE_ID, RESOURCE_TITLE, CREATOR_ID, ORIGINAL_CREATOR_ID, CONTENT_FORMAT, CONTENT_SUBFORMAT, VISIBLE_ON_PROFILE, IS_DELETED};
 
   // <TBD> - Need to decide
   // only owner (original creator of the resource) can change, which will have
   // to update all the copied records of the resource
-  static final String[] OWNER_SPECIFIC_FIELDS =
+  String[] OWNER_SPECIFIC_FIELDS =
     {RESOURCE_TITLE, RESOURCE_URL, DESCRIPTION, DEPTH_OF_KNOWLEDGE, CONTENT_FORMAT, CONTENT_SUBFORMAT};
 
-  final String[] attributes = {ResourceRepo.RESOURCE_ID,
+  String[] attributes = {ResourceRepo.RESOURCE_ID,
     ResourceRepo.RESOURCE_TITLE,
     ResourceRepo.RESOURCE_URL,
     ResourceRepo.CREATOR_ID,

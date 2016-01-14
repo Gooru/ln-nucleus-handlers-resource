@@ -58,11 +58,11 @@ class UpdateResourceHandler implements DBHandler {
       LOGGER.debug("validateRequest : updateResource : Original creator from DB = {}.", originalCreator);
 
       if ((originalCreator != null) && !originalCreator.isEmpty()) {
-        isOwner = ((context.userId()).compareToIgnoreCase(originalCreator) == 0) ? true : false;
+        isOwner = originalCreator.equalsIgnoreCase(context.userId());
       }
       LOGGER.debug("validateRequest : updateResource : Ok! So, who is trying to update content? {}.", (isOwner) ? "owner" : "someone else");
 
-      String mapValue = null;
+      String mapValue;
 
       // now mandatory field checks on input resource data and if contains
       // owner-Specific editable fields

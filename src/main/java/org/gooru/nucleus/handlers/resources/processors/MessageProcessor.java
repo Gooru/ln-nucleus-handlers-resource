@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 class MessageProcessor implements Processor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Processor.class);
-  private Message<Object> message;
+  private final Message<Object> message;
   private String userId;
   private JsonObject prefs;
   private JsonObject request;
