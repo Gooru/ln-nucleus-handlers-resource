@@ -16,7 +16,7 @@ import org.slf4j.LoggerFactory;
 
 public class ResourceVerticle extends AbstractVerticle {
 
-  static final Logger LOGGER = LoggerFactory.getLogger(ResourceVerticle.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ResourceVerticle.class);
 
   @Override
   public void start(Future<Void> voidFuture) throws Exception {

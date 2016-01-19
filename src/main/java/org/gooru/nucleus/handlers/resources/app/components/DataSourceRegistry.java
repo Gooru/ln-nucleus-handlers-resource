@@ -21,7 +21,7 @@ public class DataSourceRegistry implements Initializer, Finalizer {
   private static final String DEFAULT_DATA_SOURCE_TYPE = "nucleus.ds.type";
   private static final String DS_HIKARI = "hikari";
   private static final Logger LOGGER = LoggerFactory.getLogger(DataSourceRegistry.class);
-  boolean initialized = false;
+  private volatile boolean initialized = false;
   // All the elements in this array are supposed to be present in config file
   // as keys as we are going to initialize them with the value associated with
   // that key

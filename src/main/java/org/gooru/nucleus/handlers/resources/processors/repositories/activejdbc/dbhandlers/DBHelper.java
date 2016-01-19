@@ -18,7 +18,7 @@ import java.util.Map;
 public class DBHelper {
   private static final Logger LOGGER = LoggerFactory.getLogger(DBHelper.class);
   
-  static protected int NUM_RETRIES = 2;
+  public static final int NUM_RETRIES = 2;
 
   static protected AJEntityResource getResourceById(String resourceId) {
     try {
@@ -64,11 +64,10 @@ public class DBHelper {
       if (result.size() > 0) {
         returnValue = new JsonObject().put("duplicate_ids", new JsonArray(result.collect(ResourceEntityConstants.RESOURCE_ID)));
       }
-      return returnValue;
     } catch (SQLException se) {
       LOGGER.error("getDuplicateResourcesByURL ! : {} ", se);
-      return returnValue;
     }
+    return returnValue;
   }
 
   /*
@@ -76,10 +75,11 @@ public class DBHelper {
    */
   static protected void populateEntityFromJson(JsonObject inputJson, AJEntityResource resource) throws SQLException, IllegalArgumentException {
     String mapValue;
+
     for (Map.Entry<String, Object> entry : inputJson) {
       mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
 
-      if (Arrays.asList(ResourceEntityConstants.NOTNULL_FIELDS).contains(entry.getKey())) {
+      if (ResourceEntityConstants.NOTNULL_FIELDS.contains(entry.getKey())) {
         if (mapValue == null || mapValue.isEmpty()) {
           throw new IllegalArgumentException("Null value input for : " + entry.getKey());
         }
@@ -103,13 +103,15 @@ public class DBHelper {
           contentSubformat.setValue(mapValue);
           resource.set(entry.getKey(), contentSubformat);
         }
-      } else if (Arrays.asList(ResourceEntityConstants.JSONB_FIELDS).contains(entry.getKey())) {
-        PGobject jsonbFields = new PGobject();
-        jsonbFields.setType(ResourceEntityConstants.JSONB_FORMAT);
-        jsonbFields.setValue(mapValue);
-        resource.set(entry.getKey(), jsonbFields);
       } else {
-        resource.set(entry.getKey(), entry.getValue());
+        if (ResourceEntityConstants.JSONB_FIELDS.contains(entry.getKey())) {
+          PGobject jsonbFields = new PGobject();
+          jsonbFields.setType(ResourceEntityConstants.JSONB_FORMAT);
+          jsonbFields.setValue(mapValue);
+          resource.set(entry.getKey(), jsonbFields);
+        } else {
+          resource.set(entry.getKey(), entry.getValue());
+        }
       }
     }
   }

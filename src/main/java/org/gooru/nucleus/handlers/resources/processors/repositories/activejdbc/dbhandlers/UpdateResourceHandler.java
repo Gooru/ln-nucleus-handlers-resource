@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 
@@ -76,7 +77,7 @@ class UpdateResourceHandler implements DBHandler {
         LOGGER.debug("validateRequest updateResource : checking the key & values..before collection. Key: {}", entry.getKey());
 
         mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
-        if (Arrays.asList(ResourceEntityConstants.NOTNULL_FIELDS).contains(entry.getKey())) {
+        if (ResourceEntityConstants.NOTNULL_FIELDS.contains(entry.getKey())) {
           if (mapValue == null) {
             LOGGER.error("validateRequest Failed to update resource. Field : {} : is mandatory field and cannot be null.", entry.getKey());
             return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())),
@@ -86,11 +87,11 @@ class UpdateResourceHandler implements DBHandler {
 
         // mandatory and owner specific items may be overlapping...so do a
         // separate check not as ELSE condition
-        if (!isOwner && Arrays.asList(ResourceEntityConstants.OWNER_SPECIFIC_FIELDS).contains(entry.getKey())) {
+        if (!isOwner && ResourceEntityConstants.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
           // LOGGER.debug("validateRequest updateResource : Not owner but changing owner specific fields?");
           LOGGER.error("Error updating resource. Field: {} : can be updated only by owner of the resource.", entry.getKey());
           return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(), ExecutionResult.ExecutionStatus.FAILED);
-        } else if (isOwner && Arrays.asList(ResourceEntityConstants.OWNER_SPECIFIC_FIELDS).contains(entry.getKey())) {
+        } else if (isOwner && ResourceEntityConstants.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
           // collect the DB fields to update for owner specific fields across
           // all
           // copies of this resource
@@ -118,24 +119,26 @@ class UpdateResourceHandler implements DBHandler {
             contentSubformat.setValue(mapValue);
             updateRes.set(entry.getKey(), contentSubformat);
           }
-        } else if (Arrays.asList(ResourceEntityConstants.JSONB_FIELDS).contains(entry.getKey())) {
-          if (Arrays.asList(ResourceEntityConstants.NOTNULL_FIELDS).contains(entry.getKey())) {
+        } else {
+          if (ResourceEntityConstants.JSONB_FIELDS.contains(entry.getKey())) {
+            if (ResourceEntityConstants.NOTNULL_FIELDS.contains(entry.getKey())) {
+              if (mapValue == null || mapValue.isEmpty()) {
+                LOGGER.error("updateResource : mandatory fields is null! : {} ", entry.getKey());
+                return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())), ExecutionResult.ExecutionStatus.FAILED);
+              } else {
+                PGobject jsonbFields = new PGobject();
+                jsonbFields.setType(ResourceEntityConstants.JSONB_FORMAT);
+                jsonbFields.setValue(mapValue);
+                updateRes.set(entry.getKey(), jsonbFields);
+              }
+            }
+          } else {
             if (mapValue == null || mapValue.isEmpty()) {
-              LOGGER.error("updateResource : mandatory fields is null! : {} ", entry.getKey());
+              LOGGER.error("updateResource : mandatory fields in else is null! : {} ", entry.getKey());
               return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())), ExecutionResult.ExecutionStatus.FAILED);
             } else {
-              PGobject jsonbFields = new PGobject();
-              jsonbFields.setType(ResourceEntityConstants.JSONB_FORMAT);
-              jsonbFields.setValue(mapValue);
-              updateRes.set(entry.getKey(), jsonbFields);
+              updateRes.set(entry.getKey(), entry.getValue()); // intentionally kept entry.getValue instead of mapValue as it needs to handle other datatypes like boolean
             }
-          }
-        } else {
-          if (mapValue == null || mapValue.isEmpty()) {
-            LOGGER.error("updateResource : mandatory fields in else is null! : {} ", entry.getKey());
-            return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())), ExecutionResult.ExecutionStatus.FAILED);
-          } else {
-            updateRes.set(entry.getKey(), entry.getValue()); // intentionally kept entry.getValue instead of mapValue as it needs to handle other datatypes like boolean
           }
         }
       }
