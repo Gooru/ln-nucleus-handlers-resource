@@ -40,6 +40,8 @@ public class ResourceVerticle extends AbstractVerticle {
         future.complete(result);
       }, res -> {
         MessageResponse result = (MessageResponse) res.result();
+
+        LOGGER.debug("Returning message: " + result.reply());
         message.reply(result.reply(), result.deliveryOptions());
 
         JsonObject eventData = result.event();

@@ -2,8 +2,8 @@ package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.
 
 import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
-import org.gooru.nucleus.handlers.resources.processors.repositories.ResourceRepo;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.ResourceEntityConstants;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
@@ -22,7 +22,7 @@ class FetchResourceHandler implements DBHandler {
   @Override
   public ExecutionResult<MessageResponse> checkSanity() {
     if (context.resourceId() == null || context.resourceId().isEmpty()) {
-      LOGGER.debug("checkSanity() failed");
+      LOGGER.error("checkSanity() failed. ResourceID is null!");
       return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
     LOGGER.debug("checkSanity() passed");
@@ -36,10 +36,10 @@ class FetchResourceHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> executeRequest() {
-    AJEntityResource result = DBHelper.getInstance().getResourceById(context.resourceId());
+    AJEntityResource result = DBHelper.getResourceById(context.resourceId());
 
     if (result != null) {
-      JsonObject toReturn = new AJResponseJsonTransformer().transform(result.toJson(false, ResourceRepo.attributes));
+      JsonObject toReturn = new AJResponseJsonTransformer().transform(result.toJson(false, ResourceEntityConstants.attributes));
       LOGGER.debug("FetchResourceHandler : Return Value : {} ", toReturn);
       return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(toReturn), ExecutionResult.ExecutionStatus.SUCCESSFUL);
     }
