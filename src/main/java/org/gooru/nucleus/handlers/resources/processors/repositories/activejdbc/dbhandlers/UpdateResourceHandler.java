@@ -3,18 +3,17 @@ package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.
 import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.ResourceEntityConstants;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
+import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.SQLException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 
 class UpdateResourceHandler implements DBHandler {
@@ -41,6 +40,37 @@ class UpdateResourceHandler implements DBHandler {
       return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
 
+    JsonObject request = context.request();
+    StringJoiner missingFields = new StringJoiner(", ");
+    StringJoiner resourceIrrelevantFields = new StringJoiner(", ");
+    String mapValue;
+    for (Map.Entry<String, Object> entry : request) {
+      mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
+      if (AJEntityResource.NOTNULL_FIELDS.contains(entry.getKey())) {
+        if (mapValue == null || mapValue.isEmpty()){
+            missingFields.add(entry.getKey());
+        }
+      } else if (!AJEntityResource.VALID_UPDATE_FIELDS.contains(entry.getKey())) {
+          resourceIrrelevantFields.add(entry.getKey());
+      }
+    }
+    
+    // TODO: May be need to revisit this logic of validating fields and
+    // returning error back for all validation failed in one go
+    if (!missingFields.toString().isEmpty()) {
+      LOGGER.info("request data validation failed for '{}'", missingFields.toString());
+      return new ExecutionResult<>(
+        MessageResponseFactory.createInvalidRequestResponse("mandatory field(s) '" + missingFields.toString() + "' missing"),
+        ExecutionStatus.FAILED);
+    }
+    
+    if (!resourceIrrelevantFields.toString().isEmpty()) {
+      LOGGER.info("request data validation failed for '{}'", resourceIrrelevantFields.toString());
+      return new ExecutionResult<>(
+        MessageResponseFactory.createInvalidRequestResponse("Resource irrelevant fields are being sent in the request '" + resourceIrrelevantFields.toString() + "'"),
+        ExecutionStatus.FAILED);
+    }
+    
     LOGGER.debug("checkSanity() passed");
     return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -54,7 +84,7 @@ class UpdateResourceHandler implements DBHandler {
         LOGGER.error("validateRequest : updateResource : Object to update is not found in DB! Input resource ID: {} ", context.resourceId());
         return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(), ExecutionResult.ExecutionStatus.FAILED);
       }
-      String originalCreator = fetchDBResourceData.getString(ResourceEntityConstants.ORIGINAL_CREATOR_ID);
+      String originalCreator = fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CREATOR_ID);
       LOGGER.debug("validateRequest : updateResource : Original creator from DB = {}.", originalCreator);
 
       if ((originalCreator != null) && !originalCreator.isEmpty()) {
@@ -69,7 +99,7 @@ class UpdateResourceHandler implements DBHandler {
       // compare input value and collect only changed attributes in new model
       // that we will use to update
       updateRes = new AJEntityResource();
-      updateRes.set(ResourceEntityConstants.RESOURCE_ID, context.resourceId());
+      updateRes.set(AJEntityResource.RESOURCE_ID, context.resourceId());
 
       LOGGER.debug("validateRequest updateResource : Iterate through the input Json now.");
 
@@ -77,7 +107,7 @@ class UpdateResourceHandler implements DBHandler {
         LOGGER.debug("validateRequest updateResource : checking the key & values..before collection. Key: {}", entry.getKey());
 
         mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
-        if (ResourceEntityConstants.NOTNULL_FIELDS.contains(entry.getKey())) {
+        if (AJEntityResource.NOTNULL_FIELDS.contains(entry.getKey())) {
           if (mapValue == null) {
             LOGGER.error("validateRequest Failed to update resource. Field : {} : is mandatory field and cannot be null.", entry.getKey());
             return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())),
@@ -87,11 +117,11 @@ class UpdateResourceHandler implements DBHandler {
 
         // mandatory and owner specific items may be overlapping...so do a
         // separate check not as ELSE condition
-        if (!isOwner && ResourceEntityConstants.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
+        if (!isOwner && AJEntityResource.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
           // LOGGER.debug("validateRequest updateResource : Not owner but changing owner specific fields?");
           LOGGER.error("Error updating resource. Field: {} : can be updated only by owner of the resource.", entry.getKey());
           return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(), ExecutionResult.ExecutionStatus.FAILED);
-        } else if (isOwner && ResourceEntityConstants.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
+        } else if (isOwner && AJEntityResource.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
           // collect the DB fields to update for owner specific fields across
           // all
           // copies of this resource
@@ -104,30 +134,30 @@ class UpdateResourceHandler implements DBHandler {
         }
 
         // collect the attributes and values in the model.
-        if (ResourceEntityConstants.CONTENT_FORMAT.equalsIgnoreCase(entry.getKey())) {
-          if (!ResourceEntityConstants.VALID_CONTENT_FORMAT_FOR_RESOURCE.equalsIgnoreCase(mapValue)) {
+        if (AJEntityResource.CONTENT_FORMAT.equalsIgnoreCase(entry.getKey())) {
+          if (!AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE.equalsIgnoreCase(mapValue)) {
             LOGGER.error("updateResource : content format is invalid! : {} ", entry.getKey());
             return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())), ExecutionResult.ExecutionStatus.FAILED);
           }
-        } else if (ResourceEntityConstants.CONTENT_SUBFORMAT.equalsIgnoreCase(entry.getKey())) {
-          if (mapValue == null || mapValue.isEmpty() || !mapValue.endsWith(ResourceEntityConstants.VALID_CONTENT_FORMAT_FOR_RESOURCE)) {
+        } else if (AJEntityResource.CONTENT_SUBFORMAT.equalsIgnoreCase(entry.getKey())) {
+          if (mapValue == null || mapValue.isEmpty() || !mapValue.endsWith(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE)) {
             LOGGER.error("updateResource : content subformat is invalid! : {} ", entry.getKey());
             return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())), ExecutionResult.ExecutionStatus.FAILED);
           } else {
             PGobject contentSubformat = new PGobject();
-            contentSubformat.setType(ResourceEntityConstants.CONTENT_SUBFORMAT_TYPE);
+            contentSubformat.setType(AJEntityResource.CONTENT_SUBFORMAT_TYPE);
             contentSubformat.setValue(mapValue);
             updateRes.set(entry.getKey(), contentSubformat);
           }
         } else {
-          if (ResourceEntityConstants.JSONB_FIELDS.contains(entry.getKey())) {
-            if (ResourceEntityConstants.NOTNULL_FIELDS.contains(entry.getKey())) {
+          if (AJEntityResource.JSONB_FIELDS.contains(entry.getKey())) {
+            if (AJEntityResource.NOTNULL_FIELDS.contains(entry.getKey())) {
               if (mapValue == null || mapValue.isEmpty()) {
                 LOGGER.error("updateResource : mandatory fields is null! : {} ", entry.getKey());
                 return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())), ExecutionResult.ExecutionStatus.FAILED);
               } else {
                 PGobject jsonbFields = new PGobject();
-                jsonbFields.setType(ResourceEntityConstants.JSONB_FORMAT);
+                jsonbFields.setType(AJEntityResource.JSONB_FORMAT);
                 jsonbFields.setValue(mapValue);
                 updateRes.set(entry.getKey(), jsonbFields);
               }
@@ -167,7 +197,7 @@ class UpdateResourceHandler implements DBHandler {
     if (ownerDataToPropogateToCopies != null) {
       try {
         DBHelper.updateOwnerDataToCopies(context.resourceId(), ownerDataToPropogateToCopies, context.userId());
-        LOGGER.debug("executeRequest : Updated resource ID: " + updateRes.getString(ResourceEntityConstants.RESOURCE_ID));
+        LOGGER.debug("executeRequest : Updated resource ID: " + updateRes.getString(AJEntityResource.RESOURCE_ID));
 
       } catch (IllegalArgumentException | SQLException e) {
         LOGGER.error("executeRequest : Update resource failed to propagate changes to other copies!", e);
@@ -175,7 +205,7 @@ class UpdateResourceHandler implements DBHandler {
       }
     }
     
-    return new ExecutionResult<>(MessageResponseFactory.createPutSuccessResponse("Location", updateRes.getString(ResourceEntityConstants.RESOURCE_ID)), ExecutionResult.ExecutionStatus.SUCCESSFUL);
+    return new ExecutionResult<>(MessageResponseFactory.createPutSuccessResponse("Location", updateRes.getString(AJEntityResource.RESOURCE_ID)), ExecutionResult.ExecutionStatus.SUCCESSFUL);
   }
 
   @Override

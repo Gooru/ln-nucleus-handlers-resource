@@ -1,6 +1,6 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.ResourceEntityConstants;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import io.vertx.core.json.JsonObject;
 
 class AJResponseJsonTransformer {
@@ -11,7 +11,7 @@ class AJResponseJsonTransformer {
       return result;
     }
 
-    for (String fieldName : ResourceEntityConstants.JSONB_FIELDS) {
+    for (String fieldName : AJEntityResource.JSONB_FIELDS) {
       String valueToXform = result.getString(fieldName);
       if (valueToXform != null && !valueToXform.isEmpty()) {
         JsonObject xformedValue = new JsonObject(valueToXform);
