@@ -3,7 +3,6 @@ package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.
 import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.ResourceEntityConstants;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
@@ -39,7 +38,7 @@ class FetchResourceHandler implements DBHandler {
     AJEntityResource result = DBHelper.getResourceById(context.resourceId());
 
     if (result != null) {
-      JsonObject toReturn = new AJResponseJsonTransformer().transform(result.toJson(false, ResourceEntityConstants.attributes));
+      JsonObject toReturn = new AJResponseJsonTransformer().transform(result.toJson(false, AJEntityResource.attributes));
       LOGGER.debug("FetchResourceHandler : Return Value : {} ", toReturn);
       return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(toReturn), ExecutionResult.ExecutionStatus.SUCCESSFUL);
     }
