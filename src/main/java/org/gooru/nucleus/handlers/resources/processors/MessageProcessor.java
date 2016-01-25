@@ -43,6 +43,9 @@ class MessageProcessor implements Processor {
         case MessageConstants.MSG_OP_RES_UPDATE:
           result = processResourceUpdate();
           break;
+        case MessageConstants.MSG_OP_RES_DELETE:
+          result = processResourceDelete();
+          break;
         default:
           LOGGER.error("Invalid operation type passed in, not able to handle");
           return MessageResponseFactory.createInvalidRequestResponse("Invalid resource id");
@@ -54,6 +57,14 @@ class MessageProcessor implements Processor {
     }
   }
 
+  private MessageResponse processResourceDelete() {
+    ProcessorContext context = createContext();
+    if (context.resourceId() == null || context.resourceId().isEmpty()) {
+      LOGGER.error("Invalid request, resource id not available. Aborting");
+      return MessageResponseFactory.createInvalidRequestResponse("Invalid resource id");
+    }
+     return new RepoBuilder().buildResourceRepo(context).deleteResource();
+  }
   private MessageResponse processResourceUpdate() {
     ProcessorContext context = createContext();
     if (context.resourceId() == null || context.resourceId().isEmpty()) {

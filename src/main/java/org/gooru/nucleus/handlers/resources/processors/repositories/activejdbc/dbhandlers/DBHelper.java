@@ -186,4 +186,54 @@ public class DBHelper {
     return numRecsUpdated;
   }
   
+  static JsonObject getCopiesOfAResource(String originalResourceId) {
+    JsonObject returnValue = null;
+    
+    try {
+      String sql = " SELECT " + AJEntityResource.RESOURCE_ID + 
+              " FROM content WHERE content_format = ? AND original_content_id = ? AND is_deleted = false";
+
+      PGobject contentFormat = new PGobject();
+      contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
+      contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
+        
+      LazyList<AJEntityResource> result = AJEntityResource.findBySQL(sql, contentFormat, originalResourceId);  
+      if (result.size() > 0) {
+        returnValue = new JsonObject().put("resource_copy_ids", new JsonArray(result.collect(AJEntityResource.RESOURCE_ID)));
+        LOGGER.debug("getCopiesOfAResource ! : {} ", returnValue.toString());
+      }
+
+    } catch (SQLException se) {
+      LOGGER.error("getCopiesOfAResource ! : {} ", se);
+    }
+    return returnValue;
+  }
+  
+  static int deleteResourceCopies(String originalResourceId) throws SQLException, IllegalArgumentException {
+    // update content set is_deleted=true where content_format='resource; and original_content_id=Argument and is_deleted=false
+    LOGGER.debug("deleteResourceCopies: originalResourceId {}", originalResourceId);
+    int numRecsUpdated = -1;
+    List<Object> params = new ArrayList<>();
+    String updateStmt = AJEntityResource.IS_DELETED + "= ? ";
+    try {
+      PGobject contentFormat = new PGobject();
+      contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
+      contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
+      params.add(true);
+      params.add(contentFormat);
+      params.add(originalResourceId);
+      params.add(false);
+      LOGGER.debug("deleteResourceCopies: Statement {}", updateStmt);
+      numRecsUpdated = AJEntityResource.update(updateStmt, " content_format = ? AND original_content_id = ? AND is_deleted = ?", params.toArray());
+      LOGGER.debug("updateOwnerDataToCopies : Update successful. Number of records updated: {}", numRecsUpdated);
+
+    } catch (SQLException se) {
+      LOGGER.error("getCopiesOfAResource ! : {} ", se);
+    }
+      return numRecsUpdated;
+      
+  }
+  
+  
+
 }

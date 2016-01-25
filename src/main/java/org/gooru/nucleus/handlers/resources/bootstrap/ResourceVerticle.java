@@ -44,6 +44,7 @@ public class ResourceVerticle extends AbstractVerticle {
         LOGGER.debug("Returning message: " + result.reply());
         message.reply(result.reply(), result.deliveryOptions());
 
+        LOGGER.debug("Event Data : " + result.event());
         JsonObject eventData = result.event();
         if (eventData != null) {
           eb.publish(MessagebusEndpoints.MBEP_EVENT, eventData);
