@@ -1,6 +1,8 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
 import io.vertx.core.json.JsonObject;
+
+import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
@@ -35,9 +37,19 @@ class UpdateResourceHandler implements DBHandler {
       return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
     
-    if (context.resourceId() == null || context.resourceId().isEmpty()) {
+    if (context.userId() == null || context.userId().isEmpty() || context.userId().equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
+      return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Anonymous user denied this action"),
+        ExecutionResult.ExecutionStatus.FAILED);
+    }
+    
+    if (context.resourceId() == null) {
       LOGGER.error("checkSanity() failed with invalid resourceid. ");
-      return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(), ExecutionResult.ExecutionStatus.FAILED);
+      return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(), 
+        ExecutionResult.ExecutionStatus.FAILED);
+    } else if ( context.resourceId().isEmpty()) {
+      LOGGER.error("checkSanity() failed. ResourceID is empty!");
+      return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(), 
+        ExecutionResult.ExecutionStatus.FAILED);
     }
 
     JsonObject request = context.request();
@@ -98,8 +110,11 @@ class UpdateResourceHandler implements DBHandler {
       // owner-Specific editable fields
       // compare input value and collect only changed attributes in new model
       // that we will use to update
-      updateRes = new AJEntityResource();
-      updateRes.set(AJEntityResource.RESOURCE_ID, context.resourceId());
+      this.updateRes = new AJEntityResource();
+      PGobject oid = new PGobject();
+      oid.setType(AJEntityResource.UUID_TYPE);
+      oid.setValue(context.resourceId());
+      this.updateRes.set(AJEntityResource.RESOURCE_ID, oid);
 
       LOGGER.debug("validateRequest updateResource : Iterate through the input Json now.");
 
@@ -147,57 +162,51 @@ class UpdateResourceHandler implements DBHandler {
             PGobject contentSubformat = new PGobject();
             contentSubformat.setType(AJEntityResource.CONTENT_SUBFORMAT_TYPE);
             contentSubformat.setValue(mapValue);
-            updateRes.set(entry.getKey(), contentSubformat);
+            this.updateRes.set(entry.getKey(), contentSubformat);
           }
+        } else if (AJEntityResource.JSONB_FIELDS.contains(entry.getKey())) {
+            PGobject jsonbFields = new PGobject();
+            jsonbFields.setType(AJEntityResource.JSONB_FORMAT);
+            jsonbFields.setValue(mapValue);
+            this.updateRes.set(entry.getKey(), jsonbFields);
+        } else if (AJEntityResource.UUID_FIELDS.contains(entry.getKey())) {
+            PGobject uuidFields = new PGobject();
+            uuidFields.setType(AJEntityResource.UUID_TYPE);
+            uuidFields.setValue(mapValue);
+            this.updateRes.set(entry.getKey(), uuidFields);
         } else {
-          if (AJEntityResource.JSONB_FIELDS.contains(entry.getKey())) {
-            if (AJEntityResource.NOTNULL_FIELDS.contains(entry.getKey())) {
-              if (mapValue == null || mapValue.isEmpty()) {
-                LOGGER.error("updateResource : mandatory fields is null! : {} ", entry.getKey());
-                return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())), ExecutionResult.ExecutionStatus.FAILED);
-              } else {
-                PGobject jsonbFields = new PGobject();
-                jsonbFields.setType(AJEntityResource.JSONB_FORMAT);
-                jsonbFields.setValue(mapValue);
-                updateRes.set(entry.getKey(), jsonbFields);
-              }
-            }
-          } else {
-            if (mapValue == null || mapValue.isEmpty()) {
-              LOGGER.error("updateResource : mandatory fields in else is null! : {} ", entry.getKey());
-              return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())), ExecutionResult.ExecutionStatus.FAILED);
-            } else {
-              updateRes.set(entry.getKey(), entry.getValue()); // intentionally kept entry.getValue instead of mapValue as it needs to handle other datatypes like boolean
-            }
-          }
+            this.updateRes.set(entry.getKey(), entry.getValue()); // intentionally kept entry.getValue instead of mapValue as it needs to handle other datatypes like boolean
         }
       }
     } catch (SQLException e) {
       LOGGER.error("updateResource : SQLException caught! {} ", e);
       return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(e.getMessage()), ExecutionResult.ExecutionStatus.FAILED);
     }
+    
+    LOGGER.debug(" \n **** Model to save: {}" , this.updateRes);
     return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
   }
 
   @Override
   public ExecutionResult<MessageResponse> executeRequest() {
-    if (updateRes == null) {
+    if (this.updateRes == null) {
       LOGGER.debug("executeRequest : We should not end up here...but if we do it is because this object is not updated in validateRequest.");
       LOGGER.error("executeRequest : updateResource : Object to update is not found or NULL! Input resource ID: {} ", context.resourceId());
       return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
 
     // try to save
-    if (!updateRes.save()) {
-      LOGGER.error("executeRequest : Update resource failed! {} ", updateRes.errors());
-      return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(updateRes.errors()), ExecutionResult.ExecutionStatus.FAILED);
+    this.updateRes.setModifierId(context.userId());
+    if (!this.updateRes.save()) {
+      LOGGER.error("executeRequest : Update resource failed! {} ", this.updateRes.errors());
+      return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()), ExecutionResult.ExecutionStatus.FAILED);
     }
     
     //save successful...try to propagate ownerData changes to other copies
     if (ownerDataToPropogateToCopies != null) {
       try {
         DBHelper.updateOwnerDataToCopies(context.resourceId(), ownerDataToPropogateToCopies, context.userId());
-        LOGGER.debug("executeRequest : Updated resource ID: " + updateRes.getString(AJEntityResource.RESOURCE_ID));
+        LOGGER.debug("executeRequest : Updated resource ID: " + this.updateRes.getString(AJEntityResource.RESOURCE_ID));
 
       } catch (IllegalArgumentException | SQLException e) {
         LOGGER.error("executeRequest : Update resource failed to propagate changes to other copies!", e);
@@ -205,7 +214,7 @@ class UpdateResourceHandler implements DBHandler {
       }
     }
     
-    return new ExecutionResult<>(MessageResponseFactory.createPutSuccessResponse("Location", updateRes.getString(AJEntityResource.RESOURCE_ID)), ExecutionResult.ExecutionStatus.SUCCESSFUL);
+    return new ExecutionResult<>(MessageResponseFactory.createPutSuccessResponse("Location", this.updateRes.getString(AJEntityResource.RESOURCE_ID)), ExecutionResult.ExecutionStatus.SUCCESSFUL);
   }
 
   @Override

@@ -19,7 +19,7 @@ public class MessageConstants {
   public static final String MSG_HTTP_VALIDATION_ERROR = "http.validation.error";
   public static final String MSG_HTTP_HEADERS = "http.headers";
   public static final String MSG_MESSAGE = "message";
-
+  
   // Event message structure : Operation + Body
   public static final String MSG_EVENT_NAME = "event.name";
   public static final String MSG_EVENT_BODY = "event.body";

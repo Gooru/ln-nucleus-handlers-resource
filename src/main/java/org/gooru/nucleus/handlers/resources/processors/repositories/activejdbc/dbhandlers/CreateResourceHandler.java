@@ -3,18 +3,17 @@ package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.
 import io.vertx.core.json.JsonObject;
 
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
+import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
-import org.javalite.activejdbc.DBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.sql.SQLException;
 import java.util.Map;
 import java.util.StringJoiner;
-import java.util.UUID;
 
 class CreateResourceHandler implements DBHandler {
 
@@ -29,11 +28,16 @@ class CreateResourceHandler implements DBHandler {
   @Override
   public ExecutionResult<MessageResponse> checkSanity() {
     if (context.request() == null || context.request().isEmpty()) {
-      LOGGER.info("invalid request received to create resource");
+      LOGGER.warn("invalid request received to create resource");
       return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Invalid data provided to create resource"),
         ExecutionStatus.FAILED);
     }
 
+    if (context.userId() == null || context.userId().isEmpty() || context.userId().equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
+      return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Anonymous user denied this action"),
+        ExecutionResult.ExecutionStatus.FAILED);
+    }
+    
     JsonObject request = context.request();
     StringJoiner missingFields = new StringJoiner(", ");
     StringJoiner resourceIrrelevantFields = new StringJoiner(", ");
@@ -73,14 +77,18 @@ class CreateResourceHandler implements DBHandler {
   public ExecutionResult<MessageResponse> validateRequest() {
     try {
 
-      createRes = new AJEntityResource();
+      this.createRes = new AJEntityResource();
       DBHelper.populateEntityFromJson(context.request(), createRes);
+      this.createRes.setModifierId(context.userId());
+      this.createRes.setCreatorId(context.userId());
+      this.createRes.setOriginalCreatorId(context.userId());
+      
       
 //      createRes.set(AJEntityResource.RESOURCE_ID, "1a7f8890-c90e-4d1c-a73b-12e50bb54085");
-      createRes.set(AJEntityResource.RESOURCE_ID, UUID.randomUUID());
-      LOGGER.debug("validateRequest : Creating resource From MAP  : {}", createRes.toInsert());
+//      this.createRes.set(AJEntityResource.RESOURCE_ID, UUID.randomUUID());
+      LOGGER.debug("validateRequest : Creating resource From MAP  : {}", this.createRes.toInsert());
 
-      JsonObject resourceIdWithURLDuplicates = DBHelper.getDuplicateResourcesByURL(createRes.getString(AJEntityResource.RESOURCE_URL));
+      JsonObject resourceIdWithURLDuplicates = DBHelper.getDuplicateResourcesByURL(this.createRes.getString(AJEntityResource.RESOURCE_URL));
       if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
         LOGGER.error("validateRequest : Duplicate resource URL found. So cannot go ahead with creating new resource! URL : {}", createRes.getString(AJEntityResource.RESOURCE_URL));
         LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates); 
@@ -97,40 +105,19 @@ class CreateResourceHandler implements DBHandler {
 
   @Override
   public ExecutionResult<MessageResponse> executeRequest() {
-
-    int UUIDretries = DBHelper.NUM_RETRIES;
-    
-    while (UUIDretries != 0) {
-      try {
-        if (!createRes.insert()) {
-          if (createRes.hasErrors()) {
-            LOGGER.error("executeRequest : Create resource failed for input object. Errors: {}", createRes.errors());
-            return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(createRes.errors()), ExecutionResult.ExecutionStatus.FAILED);
-          } else {
-            LOGGER.error("executeRequest : Create resource failed for input object: {}", context.request());
-            return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionResult.ExecutionStatus.FAILED);
-          }
-        }
-        
-        // successful...
-        LOGGER.debug("executeRequest : Created resource ID: " + createRes.getString(AJEntityResource.RESOURCE_ID));
-        return new ExecutionResult<>(MessageResponseFactory.createPostSuccessResponse("Location", createRes.getString(AJEntityResource.RESOURCE_ID)),ExecutionResult.ExecutionStatus.SUCCESSFUL);        
-      } catch (DBException e) {
-        // this can potentially mean errors in DB insert....
-        // in odd case this might be due to UUID conflict...
-        // check if this is PRIMARY KEY VIOLATION issue and retry...
-        LOGGER.error("executeRequest : Create resource failed! {}", e);
-        LOGGER.error("executeRequest : Create resource failed! {}", (e.getCause() != null) ? e.getCause().getMessage() : "Unknown error!");
-        LOGGER.debug("executeRequest : Retry with new UUID value.");
-
-        UUIDretries--;
-        createRes.set(AJEntityResource.RESOURCE_ID, UUID.randomUUID());
-        //return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionResult.ExecutionStatus.FAILED);
-      }      
+    if (!this.createRes.insert()) {
+      if (this.createRes.hasErrors()) {
+        LOGGER.error("executeRequest : Create resource failed for input object. Errors: {}", this.createRes.errors());
+        return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.createRes.errors()), ExecutionResult.ExecutionStatus.FAILED);
+      } else {
+        LOGGER.error("executeRequest : Create resource failed for input object: {}", context.request());
+        return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionResult.ExecutionStatus.FAILED);
+      }
     }
     
-    // failed after retries, too...so give up now
-    return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionResult.ExecutionStatus.FAILED);
+    // successful...
+    LOGGER.debug("executeRequest : Created resource ID: " + this.createRes.getString(AJEntityResource.RESOURCE_ID));
+    return new ExecutionResult<>(MessageResponseFactory.createPostSuccessResponse("Location", this.createRes.getString(AJEntityResource.RESOURCE_ID)),ExecutionResult.ExecutionStatus.SUCCESSFUL);        
   }
 
   @Override

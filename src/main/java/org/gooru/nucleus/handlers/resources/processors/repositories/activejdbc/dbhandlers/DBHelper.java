@@ -20,14 +20,34 @@ public class DBHelper {
 
   static AJEntityResource getResourceById(String resourceId) {
     try {
-      String sql = " SELECT " + String.join(", ", AJEntityResource.attributes) + 
-                   " FROM content WHERE id = ?  AND content_format = ? AND is_deleted = false";
-  
       PGobject contentFormat = new PGobject();
       contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
       contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
       
-      LazyList<AJEntityResource> result = AJEntityResource.findBySQL(sql, resourceId, contentFormat);
+      LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.SQL_GETRESOURCEBYID, resourceId, contentFormat);
+      LOGGER.debug("getResourceById : {} ", result.toString());
+  
+      if (result.size() > 0) {
+        if (result.size() > 1) {
+          LOGGER.error("getResourceById : {} GOT MORE RESULTS FOR THE SAME ID", result.toString());
+        }
+        return result.get(0);
+      }
+  
+      LOGGER.warn("getResourceById : Resource with id : {} : not found", resourceId);
+    } catch (SQLException se) {
+      LOGGER.error("getResourceById : SQL Exception caught ! : {} ", se);
+    }
+    return null;
+  }
+  
+  static AJEntityResource getResourceDetailUpForDeletion(String resourceId) {
+    try {
+      PGobject contentFormat = new PGobject();
+      contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
+      contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
+      
+      LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.SQL_GETRESOURCEDETAILUPFORDELETION, resourceId, contentFormat);
       LOGGER.debug("getResourceById : {} ", result.toString());
   
       if (result.size() > 0) {
@@ -51,18 +71,19 @@ public class DBHelper {
     JsonObject returnValue = null;
     
     try {
-      String sql = "SELECT id FROM content"
-                 + " WHERE url = ? AND content_format = ? AND original_content_id is null AND is_deleted = false";
-  
       PGobject contentFormat = new PGobject();
       contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
       contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
         
-      LazyList<AJEntityResource> result = AJEntityResource.findBySQL(sql, inputURL, contentFormat);
+      LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.SQL_GETDUPLICATERESOURCESBYURL, inputURL, contentFormat);
       LOGGER.debug("getDuplicateResourcesByURL ! : {} ", result.toString());
   
       if (result.size() > 0) {
-        returnValue = new JsonObject().put("duplicate_ids", new JsonArray(result.collect(AJEntityResource.RESOURCE_ID)));
+        JsonArray retArray = new JsonArray();
+        for (AJEntityResource model : result) {
+          retArray.add(model.get(AJEntityResource.RESOURCE_ID).toString());
+        }
+        returnValue = new JsonObject().put("duplicate_ids", retArray);
       }
     } catch (SQLException se) {
       LOGGER.error("getDuplicateResourcesByURL ! : {} ", se);
@@ -109,6 +130,11 @@ public class DBHelper {
           jsonbFields.setType(AJEntityResource.JSONB_FORMAT);
           jsonbFields.setValue(mapValue);
           resource.set(entry.getKey(), jsonbFields);
+        } else if (AJEntityResource.UUID_FIELDS.contains(entry.getKey())) {
+          PGobject uuidFields = new PGobject();
+          uuidFields.setType(AJEntityResource.UUID_TYPE);
+          uuidFields.setValue(mapValue);
+          resource.set(entry.getKey(), uuidFields);
         } else {
           resource.set(entry.getKey(), entry.getValue());
         }
@@ -168,6 +194,11 @@ public class DBHelper {
           jsonbFields.setType(AJEntityResource.JSONB_FORMAT);
           jsonbFields.setValue(entry.getValue().toString());
           params.add(jsonbFields);
+        } else if (AJEntityResource.UUID_FIELDS.contains(entry.getKey())) {
+          PGobject uuidFields = new PGobject();
+          uuidFields.setType(AJEntityResource.UUID_TYPE);
+          uuidFields.setValue(mapValue);
+          params.add(uuidFields);
         } else {
           params.add(entry.getValue());
         }
@@ -179,32 +210,27 @@ public class DBHelper {
       if (updateStmt != null) {
         params.add(ownerResourceId);
         params.add(originalCreator);
-        numRecsUpdated = AJEntityResource.update(updateStmt, "original_content_id = ? AND original_creator_id = ? AND is_deleted = false", params.toArray());
+        numRecsUpdated = AJEntityResource.update(updateStmt, AJEntityResource.SQL_UPDATEOWNERDATATOCOPIES_WHERECLAUSE, params.toArray());
         LOGGER.debug("updateOwnerDataToCopies : Update successful. Number of records updated: {}", numRecsUpdated);
       }
     } 
     return numRecsUpdated;
   }
   
-  static JsonObject getCopiesOfAResource(String originalResourceId) {
+  static JsonObject getCopiesOfAResource(String originalResourceId) throws SQLException {
     JsonObject returnValue = null;
-    
-    try {
-      String sql = " SELECT " + AJEntityResource.RESOURCE_ID + 
-              " FROM content WHERE content_format = ? AND original_content_id = ? AND is_deleted = false";
+    PGobject contentFormat = new PGobject();
+    contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
+    contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
 
-      PGobject contentFormat = new PGobject();
-      contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
-      contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
-        
-      LazyList<AJEntityResource> result = AJEntityResource.findBySQL(sql, contentFormat, originalResourceId);  
-      if (result.size() > 0) {
-        returnValue = new JsonObject().put("resource_copy_ids", new JsonArray(result.collect(AJEntityResource.RESOURCE_ID)));
-        LOGGER.debug("getCopiesOfAResource ! : {} ", returnValue.toString());
+    LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.SQL_GETCOPIESOFARESOURCE, contentFormat, originalResourceId);
+    if (result.size() > 0) {
+      JsonArray retArray = new JsonArray();
+      for (AJEntityResource model : result) {
+        retArray.add(model.get(AJEntityResource.RESOURCE_ID).toString());
       }
-
-    } catch (SQLException se) {
-      LOGGER.error("getCopiesOfAResource ! : {} ", se);
+      returnValue = new JsonObject().put("resource_copy_ids", retArray);
+      LOGGER.debug("getCopiesOfAResource ! : {} ", returnValue.toString());
     }
     return returnValue;
   }
@@ -222,10 +248,9 @@ public class DBHelper {
       params.add(true);
       params.add(contentFormat);
       params.add(originalResourceId);
-      params.add(false);
-      LOGGER.debug("deleteResourceCopies: Statement {}", updateStmt);
-      numRecsUpdated = AJEntityResource.update(updateStmt, " content_format = ? AND original_content_id = ? AND is_deleted = ?", params.toArray());
-      LOGGER.debug("updateOwnerDataToCopies : Update successful. Number of records updated: {}", numRecsUpdated);
+
+      numRecsUpdated = AJEntityResource.update(updateStmt, AJEntityResource.SQL_DELETERESOURCECOPIES_WHERECLAUSE, params.toArray());
+      LOGGER.debug("deleteResourceCopies : Update successful and is_deleted set to true for all copies of the resource {} . Number of records updated: {}", originalResourceId, numRecsUpdated);
 
     } catch (SQLException se) {
       LOGGER.error("getCopiesOfAResource ! : {} ", se);
