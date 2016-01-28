@@ -49,9 +49,10 @@ class FetchResourceHandler implements DBHandler {
     AJEntityResource result = DBHelper.getResourceById(context.resourceId());
 
     if (result != null) {
-      JsonObject toReturn = new AJResponseJsonTransformer().transform(result.toJson(false, AJEntityResource.attributes_for_create_update_fetch));
-      LOGGER.debug("FetchResourceHandler : Return Value : {} ", toReturn);
-      return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(toReturn), ExecutionResult.ExecutionStatus.SUCCESSFUL);
+       return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(
+              new JsonObject(new org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.formatter.JsonFormatterBuilder().buildSimpleJsonFormatter(false, AJEntityResource.RESOURCE_SPECIFIC_FIELDS).toJson(result))),
+              ExecutionResult.ExecutionStatus.SUCCESSFUL);
+
     }
 
     LOGGER.warn("FetchResourceHandler : Resource with id : {} : not found", context.resourceId());

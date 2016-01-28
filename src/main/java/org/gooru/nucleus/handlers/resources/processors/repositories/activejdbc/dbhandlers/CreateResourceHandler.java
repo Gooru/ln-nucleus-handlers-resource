@@ -79,13 +79,10 @@ class CreateResourceHandler implements DBHandler {
 
       this.createRes = new AJEntityResource();
       DBHelper.populateEntityFromJson(context.request(), createRes);
-      this.createRes.setModifierId(context.userId());
-      this.createRes.setCreatorId(context.userId());
-      this.createRes.setOriginalCreatorId(context.userId());
+      DBHelper.setPGObject(this.createRes, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, context.userId());
+      DBHelper.setPGObject(this.createRes, AJEntityResource.CREATOR_ID, AJEntityResource.UUID_TYPE, context.userId());
+      DBHelper.setPGObject(this.createRes, AJEntityResource.ORIGINAL_CREATOR_ID, AJEntityResource.UUID_TYPE, context.userId());
       
-      
-//      createRes.set(AJEntityResource.RESOURCE_ID, "1a7f8890-c90e-4d1c-a73b-12e50bb54085");
-//      this.createRes.set(AJEntityResource.RESOURCE_ID, UUID.randomUUID());
       LOGGER.debug("validateRequest : Creating resource From MAP  : {}", this.createRes.toInsert());
 
       JsonObject resourceIdWithURLDuplicates = DBHelper.getDuplicateResourcesByURL(this.createRes.getString(AJEntityResource.RESOURCE_URL));

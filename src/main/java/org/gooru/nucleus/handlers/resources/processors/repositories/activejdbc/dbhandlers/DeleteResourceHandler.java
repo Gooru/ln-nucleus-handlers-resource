@@ -9,7 +9,6 @@ import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
 import org.javalite.activejdbc.Base;
-import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,16 +45,10 @@ class DeleteResourceHandler implements DBHandler {
   @Override
   public ExecutionResult<MessageResponse> validateRequest() {
     
-    resource = DBHelper.getResourceDetailUpForDeletion(context.resourceId());
-    if (resource == null) {
+    this.resource = DBHelper.getResourceDetailUpForDeletion(context.resourceId());
+    if (this.resource == null) {
       LOGGER.error("validateRequest : deleteResource : Object to update is not found in DB! Input resource ID: {} ", context.resourceId());
       return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(), ExecutionResult.ExecutionStatus.FAILED);
-    }
-    
-    if(resource.getBoolean(AJEntityResource.IS_DELETED)) {
-      LOGGER.info("resource {} is already deleted. Aborting", context.resourceId());
-      return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse("Resource you are trying to delete is already deleted"),
-              ExecutionResult.ExecutionStatus.FAILED);
     }
     
     if (!authorized()) {
@@ -72,27 +65,27 @@ class DeleteResourceHandler implements DBHandler {
   public ExecutionResult<MessageResponse> executeRequest() {
     JsonObject resourceCopyIds = new JsonObject();
     try {
-      setPGObject(AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, this.context.userId());
+      DBHelper.setPGObject(this.resource, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, this.context.userId());
       if (this.resource.hasErrors()) {
-        return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resource.errors()), ExecutionResult.ExecutionStatus.FAILED);
+        return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.resource.errors()), ExecutionResult.ExecutionStatus.FAILED);
       }
       
-      resource.set(AJEntityResource.IS_DELETED, true);
-      if (!resource.save()) {
+      this.resource.set(AJEntityResource.IS_DELETED, true);
+      if (!this.resource.save()) {
         LOGGER.info("error in delete resource, returning errors");
-        return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resource.errors()),
+        return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.resource.errors()),
                 ExecutionResult.ExecutionStatus.FAILED);
       }
       
-      resourceCopyIds.put("id", resource.getId().toString());  // convert to String as we get UUID here
-      String creator = resource.getString(AJEntityResource.CREATOR_ID);
+      resourceCopyIds.put("id", this.resource.getId().toString());  // convert to String as we get UUID here
+      String creator = this.resource.getString(AJEntityResource.CREATOR_ID);
       if (creator != null && 
           creator.equalsIgnoreCase(context.userId()) && 
-          (resource.getString(AJEntityResource.ORIGINAL_CONTENT_ID) == null)) {
+          (this.resource.getString(AJEntityResource.ORIGINAL_CONTENT_ID) == null)) {
         LOGGER.info("original resource marked as deleted successfully");
-        resourceCopyIds = DBHelper.getCopiesOfAResource(context.resourceId());
+        resourceCopyIds = DBHelper.getCopiesOfAResource(this.resource, context.resourceId());
         if (resourceCopyIds != null && !resourceCopyIds.isEmpty()) {
-          int deletedResourceCopies = DBHelper.deleteResourceCopies(context.resourceId());
+          int deletedResourceCopies = DBHelper.deleteResourceCopies(this.resource,context.resourceId());
           if (deletedResourceCopies >= 0) {
               return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(resourceCopyIds), ExecutionResult.ExecutionStatus.SUCCESSFUL);
           }
@@ -118,9 +111,9 @@ class DeleteResourceHandler implements DBHandler {
   }
   
   private boolean authorized() {
-    String creator = resource.getString(AJEntityResource.CREATOR_ID);
-    String course = resource.getString(AJEntityResource.COURSE_ID);
-    String collection = resource.getString(AJEntityResource.COLLECTION_ID);
+    String creator = this.resource.getString(AJEntityResource.CREATOR_ID);
+    String course = this.resource.getString(AJEntityResource.COURSE_ID);
+    String collection = this.resource.getString(AJEntityResource.COLLECTION_ID);
     if (creator != null && creator.equalsIgnoreCase(context.userId()) && course == null && collection == null) {
       // Since the creator is modifying, and it is not part of any collection or course, then owner should be able to modify
       return true;
@@ -128,10 +121,10 @@ class DeleteResourceHandler implements DBHandler {
       // The ownership and rights flows from either collection or course
       long authRecordCount;
       if (course != null) {
-        // Check if user is one of collaborator on course, we do not need to check the owner as course owner should be question creator
+        // Check if user is one of collaborator on course, we do not need to check the owner as course owner should be resource creator
         authRecordCount =
           Base.count(AJEntityResource.TABLE_COURSE, AJEntityResource.AUTH_VIA_COURSE_FILTER, course, context.userId(), context.userId());
-        if (authRecordCount > 1) {
+        if (authRecordCount >= 1) {
           // Auth check successful
           LOGGER.debug("Auth check successful based on course: {}", course);
           return true;
@@ -140,7 +133,7 @@ class DeleteResourceHandler implements DBHandler {
         // Check if the user is one of collaborator on collection, we do not need to check about course now
         authRecordCount =
           Base.count(AJEntityResource.TABLE_COLLECTION, AJEntityResource.AUTH_VIA_COLLECTION_FILTER, collection, context.userId(), context.userId());
-        if (authRecordCount > 1) {
+        if (authRecordCount >= 1) {
           LOGGER.debug("Auth check successful based on collection: {}", collection);
           return true;
         }
@@ -150,17 +143,7 @@ class DeleteResourceHandler implements DBHandler {
     return false;
   }
  
-  private void setPGObject(String field, String type, String value) {
-    PGobject pgObject = new PGobject();
-    pgObject.setType(type);
-    try {
-      pgObject.setValue(value);
-      this.resource.set(field, pgObject);
-    } catch (SQLException e) {
-      LOGGER.error("Not able to set value for field: {}, type: {}, value: {}", field, type, value);
-      this.resource.errors().put(field, value);
-    }
-  }
+  
   
 
 
