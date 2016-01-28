@@ -17,6 +17,9 @@ public class DBHandlerBuilder {
 
   public DBHandler buildCreateResourceHandler(ProcessorContext context) {
     return new CreateResourceHandler(context);
-
+  }
+    
+  public DBHandler buildDeleteResourceHandler(ProcessorContext context) {
+    return new DeleteResourceHandler(context);
   }
 }

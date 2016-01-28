@@ -12,6 +12,7 @@ import org.javalite.activejdbc.annotations.Table;
  */
 @Table("content")
 public class AJEntityResource extends Model {
+  
   public static final String RESOURCE_ID = "id";
   public static final String RESOURCE_TITLE = "title";
   public static final String RESOURCE_URL = "url";
@@ -36,22 +37,24 @@ public class AJEntityResource extends Model {
   public static final String DISPLAY_GUIDE = "display_guide";
   public static final String ACCESSIBILITY = "accessibility";
   public static final String IS_DELETED = "is_deleted";
+  public static final String MODIFIER_ID = "modifier_id";
  
   public static final String COURSE_ID = "course_id";
   public static final String UNIT_ID = "unit_id";
   public static final String LESSON_ID = "lesson_id";
   public static final String COLLECTION_ID = "collection_id";
-  public static final String SEQUENCE_ID = "sequence_id";
-  
-  
+  public static final String SEQUENCE_ID ="sequence_id";
+
   public static final String VALID_CONTENT_FORMAT_FOR_RESOURCE = "resource";
   public static final String JSONB_FORMAT = "jsonb";
+  public static final String UUID_TYPE = "uuid";
 
 
   public static final List<String> RESOURCE_SPECIFIC_FIELDS = new ArrayList<>(Arrays.asList(RESOURCE_ID,
           RESOURCE_TITLE,
           RESOURCE_URL,
           CREATOR_ID,
+          MODIFIER_ID,
           ORIGINAL_CREATOR_ID,
           ORIGINAL_CONTENT_ID,
           PUBLISH_DATE,
@@ -70,7 +73,11 @@ public class AJEntityResource extends Model {
           RESOURCE_INFO,
           VISIBLE_ON_PROFILE,
           DISPLAY_GUIDE,
-          ACCESSIBILITY));
+          ACCESSIBILITY,
+          COURSE_ID,
+          UNIT_ID,
+          LESSON_ID,
+          COLLECTION_ID));
 
   // jsonb fields relevant to resource
   public static final List<String> JSONB_FIELDS = new ArrayList<>(Arrays.asList(METADATA,
@@ -80,10 +87,22 @@ public class AJEntityResource extends Model {
           RESOURCE_INFO,
           DISPLAY_GUIDE,
           ACCESSIBILITY));
+  
+  // jsonb fields relevant to resource
+  public static final List<String> UUID_FIELDS = new ArrayList<>(Arrays.asList(RESOURCE_ID,
+          CREATOR_ID,
+          MODIFIER_ID,
+          ORIGINAL_CONTENT_ID,
+          ORIGINAL_CREATOR_ID,
+          COURSE_ID,
+          UNIT_ID,
+          LESSON_ID,
+          COLLECTION_ID));
 
   // not null fields in db
   public static final List<String> NOTNULL_FIELDS = new ArrayList<>(Arrays.asList(RESOURCE_TITLE,
           CREATOR_ID,
+          MODIFIER_ID,
           ORIGINAL_CREATOR_ID,
           CONTENT_FORMAT,
           CONTENT_SUBFORMAT));
@@ -100,7 +119,8 @@ public class AJEntityResource extends Model {
           CONTENT_SUBFORMAT,
           RESOURCE_INFO,
           DISPLAY_GUIDE,
-          ACCESSIBILITY));
+          ACCESSIBILITY,
+          ORIGINAL_CONTENT_ID));
   
   
   public static final List<String> VALID_UPDATE_FIELDS = new ArrayList<>(Arrays.asList(RESOURCE_TITLE,
@@ -121,28 +141,30 @@ public class AJEntityResource extends Model {
           RESOURCE_INFO,
           VISIBLE_ON_PROFILE,
           DISPLAY_GUIDE,
-          ACCESSIBILITY));
+          ACCESSIBILITY,
+          COURSE_ID,
+          UNIT_ID,
+          LESSON_ID,
+          COLLECTION_ID));
 
 
-  public static final String[] attributes = { RESOURCE_ID,
-          RESOURCE_TITLE,
-          RESOURCE_URL,
-          CREATOR_ID,
-          NARRATION,
-          DESCRIPTION,
-          CONTENT_FORMAT,
-          CONTENT_SUBFORMAT,
-          METADATA,
-          TAXONOMY,
-          DEPTH_OF_KNOWLEDGE,
-          ORIGINAL_CONTENT_ID,
-          ORIGINAL_CREATOR_ID,
-          IS_DELETED,
-          IS_COPYRIGHT_OWNER,
-          COPYRIGHT_OWNER,
-          VISIBLE_ON_PROFILE,
-          THUMBNAIL,
-          RESOURCE_INFO,
-          DISPLAY_GUIDE,
-          ACCESSIBILITY };
+  
+  public static final String SQL_GETRESOURCEBYID = " SELECT id, title, url, creator_id, modifier_id, narration, description, content_format, content_subformat, metadata, taxonomy, depth_of_knowledge, original_content_id, original_creator_id, is_deleted, is_copyright_owner, copyright_owner, visible_on_profile, thumbnail, info, display_guide, accessibility, course_id, unit_id, lesson_id, collection_id FROM content WHERE id = ?::uuid  AND content_format = ?::content_format_type AND is_deleted = false";
+  
+  public static final String SQL_GETDUPLICATERESOURCESBYURL = "SELECT id FROM content WHERE url = ? AND content_format = ?::content_format_type AND original_content_id is null AND is_deleted = false";
+  
+  public static final String SQL_GETRESOURCEDETAILUPFORDELETION = "SELECT id, creator_id, content_format, modifier_by, original_content_id, original_creator_id, is_deleted, course_id, unit_id, lesson_id, collection_id FROM content WHERE id=?::uuid AND content_format = ?::content_format_type AND is_deleted = false";
+
+  public static final String SQL_UPDATEOWNERDATATOCOPIES_WHERECLAUSE = "original_content_id = ?::uuid AND original_creator_id = ?::uuid AND is_deleted = false";
+  
+  public static final String SQL_GETCOPIESOFARESOURCE = " SELECT id FROM content WHERE content_format = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
+
+  public static final String SQL_DELETERESOURCECOPIES_WHERECLAUSE = " content_format = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
+
+ // owner or collaborator at course or collection level are authorized to delete the resource.
+  public static final String TABLE_COURSE = "course";
+  public static final String TABLE_COLLECTION = "collection";
+  public static final String AUTH_VIA_COLLECTION_FILTER = "id = ?::uuid and (owner_id = ?::uuid or collaborator ?? ?);";
+  public static final String AUTH_VIA_COURSE_FILTER = "id = ?::uuid and (owner_id = ?::uuid or collaborator ?? ?)";
+
 }

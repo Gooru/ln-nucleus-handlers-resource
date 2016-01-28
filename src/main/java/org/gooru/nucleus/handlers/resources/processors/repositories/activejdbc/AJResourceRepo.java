@@ -30,4 +30,9 @@ public class AJResourceRepo implements ResourceRepo {
     return new TransactionExecutor().executeTransaction(new DBHandlerBuilder().buildFetchResourceHandler(context));
 
   }
+
+  @Override
+  public MessageResponse deleteResource() {
+    return new TransactionExecutor().executeTransaction(new DBHandlerBuilder().buildDeleteResourceHandler(context));
+  }
 }
