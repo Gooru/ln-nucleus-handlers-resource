@@ -42,23 +42,6 @@ public class MessageResponseFactory {
     return new MessageResponse.Builder().validationFailed().setStatusBadRequest().setResponseBody(errorJson).build();
   }
 
-/*  public static MessageResponse createGetSuccessResponse(JsonObject responseBody) {
-    return new MessageResponse.Builder().successful().setStatusOkay().setContentTypeJson().setResponseBody(responseBody).build();
-  }
-
-  public static MessageResponse createPutSuccessResponse(String key, String value) {
-    return new MessageResponse.Builder().successful().setStatusNoOutput().setHeader(key, value).build();
-  }
-
-  public static MessageResponse createPostSuccessResponse(String key, String value) {
-    return new MessageResponse.Builder().successful().setStatusCreated().setHeader(key, value).build();
-  }
-
-  public static MessageResponse createDeleteSuccessResponse() {
-    return new MessageResponse.Builder().successful().setStatusNoOutput().build();
-  }
-  
-*/
 
   public static MessageResponse createGetSuccessResponse(JsonObject responseBody) {
     JsonObject eventData = new JsonObject();
