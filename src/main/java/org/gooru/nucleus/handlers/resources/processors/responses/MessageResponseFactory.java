@@ -1,7 +1,6 @@
 package org.gooru.nucleus.handlers.resources.processors.responses;
 
 import io.vertx.core.json.JsonObject;
-
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.javalite.activejdbc.Errors;
 
@@ -42,17 +41,12 @@ public class MessageResponseFactory {
     return new MessageResponse.Builder().validationFailed().setStatusBadRequest().setResponseBody(errorJson).build();
   }
 
-
   public static MessageResponse createGetSuccessResponse(JsonObject responseBody) {
     JsonObject eventData = new JsonObject();
     eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_RES_GET);
     eventData.put(MessageConstants.MSG_EVENT_BODY, responseBody);
-    
-    return new MessageResponse.Builder().successful()
-                                        .setStatusOkay()
-                                        .setContentTypeJson()
-                                        .setResponseBody(responseBody)
-                                        .setEventData(eventData)
+
+    return new MessageResponse.Builder().successful().setStatusOkay().setContentTypeJson().setResponseBody(responseBody).setEventData(eventData)
                                         .build();
   }
 
@@ -60,35 +54,24 @@ public class MessageResponseFactory {
     JsonObject eventData = new JsonObject();
     eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_RES_UPDATE);
     eventData.put(MessageConstants.MSG_EVENT_BODY, new JsonObject().put("id", value));
-    
-    return new MessageResponse.Builder().successful()
-                                        .setStatusNoOutput()
-                                        .setHeader(key, value)
-                                        .setEventData(eventData)
-                                        .build();
+
+    return new MessageResponse.Builder().successful().setStatusNoOutput().setHeader(key, value).setEventData(eventData).build();
   }
 
   public static MessageResponse createPostSuccessResponse(String key, String value) {
     JsonObject eventData = new JsonObject();
     eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_RES_CREATE);
     eventData.put(MessageConstants.MSG_EVENT_BODY, new JsonObject().put("id", value));
-    
-    return new MessageResponse.Builder().successful()
-                                        .setStatusCreated()
-                                        .setHeader(key, value)
-                                        .setEventData(eventData)
-                                        .build();
+
+    return new MessageResponse.Builder().successful().setStatusCreated().setHeader(key, value).setEventData(eventData).build();
   }
 
   public static MessageResponse createDeleteSuccessResponse(JsonObject inputData) {
     JsonObject eventData = new JsonObject();
     eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_RES_DELETE);
     eventData.put(MessageConstants.MSG_EVENT_BODY, inputData);
-   
-    return new MessageResponse.Builder().successful()
-                                        .setStatusNoOutput()
-                                        .setEventData(eventData)
-                                        .build();
+
+    return new MessageResponse.Builder().successful().setStatusNoOutput().setEventData(eventData).build();
   }
 
   public static MessageResponse createInvalidRequestResponse(String message) {

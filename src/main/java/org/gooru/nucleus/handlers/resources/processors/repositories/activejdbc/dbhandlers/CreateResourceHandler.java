@@ -1,17 +1,16 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
 import io.vertx.core.json.JsonObject;
-
-import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.sql.SQLException;
+
 import java.util.Map;
 import java.util.StringJoiner;
 
@@ -37,7 +36,7 @@ class CreateResourceHandler implements DBHandler {
       return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Anonymous user denied this action"),
         ExecutionResult.ExecutionStatus.FAILED);
     }
-    
+
     JsonObject request = context.request();
     StringJoiner missingFields = new StringJoiner(", ");
     StringJoiner resourceIrrelevantFields = new StringJoiner(", ");
@@ -45,30 +44,29 @@ class CreateResourceHandler implements DBHandler {
     for (Map.Entry<String, Object> entry : request) {
       mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
       if (AJEntityResource.NOTNULL_FIELDS.contains(entry.getKey())) {
-        if (mapValue == null || mapValue.isEmpty()){
+        if (mapValue == null || mapValue.isEmpty()) {
           missingFields.add(entry.getKey());
         }
       } else if (!AJEntityResource.RESOURCE_SPECIFIC_FIELDS.contains(entry.getKey())) {
         resourceIrrelevantFields.add(entry.getKey());
       }
     }
-    
+
     // TODO: May be need to revisit this logic of validating fields and
     // returning error back for all validation failed in one go
     if (!missingFields.toString().isEmpty()) {
       LOGGER.info("request data validation failed for '{}'", missingFields.toString());
       return new ExecutionResult<>(
-        MessageResponseFactory.createInvalidRequestResponse("mandatory field(s) '" + missingFields.toString() + "' missing"),
-        ExecutionStatus.FAILED);
+        MessageResponseFactory.createInvalidRequestResponse("mandatory field(s) '" + missingFields.toString() + "' missing"), ExecutionStatus.FAILED);
     }
-    
+
     if (!resourceIrrelevantFields.toString().isEmpty()) {
       LOGGER.info("request data validation failed for '{}'", resourceIrrelevantFields.toString());
-      return new ExecutionResult<>(
-        MessageResponseFactory.createInvalidRequestResponse("Resource irrelevant fields are being sent in the request '" + resourceIrrelevantFields.toString() + "'"),
+      return new ExecutionResult<>(MessageResponseFactory
+        .createInvalidRequestResponse("Resource irrelevant fields are being sent in the request '" + resourceIrrelevantFields.toString() + "'"),
         ExecutionStatus.FAILED);
     }
-    
+
     LOGGER.debug("checkSanity() OK");
     return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -82,20 +80,22 @@ class CreateResourceHandler implements DBHandler {
       DBHelper.setPGObject(this.createRes, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, context.userId());
       DBHelper.setPGObject(this.createRes, AJEntityResource.CREATOR_ID, AJEntityResource.UUID_TYPE, context.userId());
       DBHelper.setPGObject(this.createRes, AJEntityResource.ORIGINAL_CREATOR_ID, AJEntityResource.UUID_TYPE, context.userId());
-      
+
       LOGGER.debug("validateRequest : Creating resource From MAP  : {}", this.createRes.toInsert());
 
       JsonObject resourceIdWithURLDuplicates = DBHelper.getDuplicateResourcesByURL(this.createRes.getString(AJEntityResource.RESOURCE_URL));
       if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
-        LOGGER.error("validateRequest : Duplicate resource URL found. So cannot go ahead with creating new resource! URL : {}", createRes.getString(AJEntityResource.RESOURCE_URL));
-        LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates); 
-        return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resourceIdWithURLDuplicates), ExecutionResult.ExecutionStatus.FAILED);
+        LOGGER.error("validateRequest : Duplicate resource URL found. So cannot go ahead with creating new resource! URL : {}",
+          createRes.getString(AJEntityResource.RESOURCE_URL));
+        LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates);
+        return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resourceIdWithURLDuplicates),
+          ExecutionResult.ExecutionStatus.FAILED);
       }
 
-    } catch (SQLException |  IllegalArgumentException e) {
+    } catch (IllegalArgumentException e) {
       LOGGER.error("CheckSanity : {} ", e);
       return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(), ExecutionResult.ExecutionStatus.FAILED);
-    } 
+    }
 
     return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -105,16 +105,18 @@ class CreateResourceHandler implements DBHandler {
     if (!this.createRes.insert()) {
       if (this.createRes.hasErrors()) {
         LOGGER.error("executeRequest : Create resource failed for input object. Errors: {}", this.createRes.errors());
-        return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.createRes.errors()), ExecutionResult.ExecutionStatus.FAILED);
+        return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.createRes.errors()),
+          ExecutionResult.ExecutionStatus.FAILED);
       } else {
         LOGGER.error("executeRequest : Create resource failed for input object: {}", context.request());
         return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(), ExecutionResult.ExecutionStatus.FAILED);
       }
     }
-    
+
     // successful...
     LOGGER.debug("executeRequest : Created resource ID: " + this.createRes.getString(AJEntityResource.RESOURCE_ID));
-    return new ExecutionResult<>(MessageResponseFactory.createPostSuccessResponse("Location", this.createRes.getString(AJEntityResource.RESOURCE_ID)),ExecutionResult.ExecutionStatus.SUCCESSFUL);        
+    return new ExecutionResult<>(MessageResponseFactory.createPostSuccessResponse("Location", this.createRes.getString(AJEntityResource.RESOURCE_ID)),
+      ExecutionResult.ExecutionStatus.SUCCESSFUL);
   }
 
   @Override

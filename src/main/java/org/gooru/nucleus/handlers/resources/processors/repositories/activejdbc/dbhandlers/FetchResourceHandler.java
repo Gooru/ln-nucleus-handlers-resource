@@ -1,7 +1,6 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
 import io.vertx.core.json.JsonObject;
-
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
@@ -24,17 +23,16 @@ class FetchResourceHandler implements DBHandler {
     if (context.resourceId() == null) {
       LOGGER.error("checkSanity() failed. ResourceID is null!");
       return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(), ExecutionResult.ExecutionStatus.FAILED);
-    } else if ( context.resourceId().isEmpty()) {
+    } else if (context.resourceId().isEmpty()) {
       LOGGER.error("checkSanity() failed. ResourceID is empty!");
       return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
 
     // we need some valid user -- anonymous will also do
     if (context.userId() == null || context.userId().isEmpty()) {
-      return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Invalid user context"),
-        ExecutionResult.ExecutionStatus.FAILED);
+      return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Invalid user context"), ExecutionResult.ExecutionStatus.FAILED);
     }
-    
+
     LOGGER.debug("checkSanity() passed");
     return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -49,9 +47,9 @@ class FetchResourceHandler implements DBHandler {
     AJEntityResource result = DBHelper.getResourceById(context.resourceId());
 
     if (result != null) {
-       return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(
-              new JsonObject(new org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.formatter.JsonFormatterBuilder().buildSimpleJsonFormatter(false, AJEntityResource.RESOURCE_SPECIFIC_FIELDS).toJson(result))),
-              ExecutionResult.ExecutionStatus.SUCCESSFUL);
+      return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(new JsonObject(
+        new org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.formatter.JsonFormatterBuilder()
+          .buildSimpleJsonFormatter(false, AJEntityResource.RESOURCE_SPECIFIC_FIELDS).toJson(result))), ExecutionResult.ExecutionStatus.SUCCESSFUL);
 
     }
 

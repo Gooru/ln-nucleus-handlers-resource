@@ -66,6 +66,7 @@ class MessageProcessor implements Processor {
     }
     return new RepoBuilder().buildResourceRepo(context).deleteResource();
   }
+
   private MessageResponse processResourceUpdate() {
     ProcessorContext context = createContext();
     if (isIdInvalid(context)) {

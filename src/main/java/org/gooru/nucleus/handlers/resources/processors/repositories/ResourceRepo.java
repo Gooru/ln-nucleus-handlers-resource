@@ -10,7 +10,7 @@ public interface ResourceRepo {
   MessageResponse updateResource();
 
   MessageResponse fetchResource();
-  
+
   MessageResponse deleteResource();
 
 }

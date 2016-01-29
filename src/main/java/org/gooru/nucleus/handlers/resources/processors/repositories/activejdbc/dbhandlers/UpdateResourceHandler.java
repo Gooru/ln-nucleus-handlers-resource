@@ -1,14 +1,13 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
 import io.vertx.core.json.JsonObject;
-
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
-import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,7 +36,7 @@ class UpdateResourceHandler implements DBHandler {
 
     if (context.userId() == null || context.userId().isEmpty() || context.userId().equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
       return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Anonymous user denied this action"),
-              ExecutionResult.ExecutionStatus.FAILED);
+        ExecutionResult.ExecutionStatus.FAILED);
     }
 
     if (context.resourceId() == null) {
@@ -68,16 +67,14 @@ class UpdateResourceHandler implements DBHandler {
     if (!missingFields.toString().isEmpty()) {
       LOGGER.info("request data validation failed for '{}'", missingFields.toString());
       return new ExecutionResult<>(
-              MessageResponseFactory.createInvalidRequestResponse("mandatory field(s) '" + missingFields.toString() + "' missing"),
-              ExecutionStatus.FAILED);
+        MessageResponseFactory.createInvalidRequestResponse("mandatory field(s) '" + missingFields.toString() + "' missing"), ExecutionStatus.FAILED);
     }
 
     if (!resourceIrrelevantFields.toString().isEmpty()) {
       LOGGER.info("request data validation failed for '{}'", resourceIrrelevantFields.toString());
-      return new ExecutionResult<>(
-              MessageResponseFactory.createInvalidRequestResponse(
-                      "Resource irrelevant fields are being sent in the request '" + resourceIrrelevantFields.toString() + "'"),
-              ExecutionStatus.FAILED);
+      return new ExecutionResult<>(MessageResponseFactory
+        .createInvalidRequestResponse("Resource irrelevant fields are being sent in the request '" + resourceIrrelevantFields.toString() + "'"),
+        ExecutionStatus.FAILED);
     }
 
     LOGGER.debug("checkSanity() passed");
@@ -111,7 +108,7 @@ class UpdateResourceHandler implements DBHandler {
     DBHelper.setPGObject(this.updateRes, AJEntityResource.RESOURCE_ID, AJEntityResource.UUID_TYPE, context.resourceId());
     if (this.updateRes.hasErrors()) {
       return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
-              ExecutionResult.ExecutionStatus.FAILED);
+        ExecutionResult.ExecutionStatus.FAILED);
     }
 
     LOGGER.debug("validateRequest updateResource : Iterate through the input Json now.");
@@ -124,16 +121,17 @@ class UpdateResourceHandler implements DBHandler {
         if (mapValue == null) {
           LOGGER.error("validateRequest Failed to update resource. Field : {} : is mandatory field and cannot be null.", entry.getKey());
           return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())),
-                  ExecutionResult.ExecutionStatus.FAILED);
+            ExecutionResult.ExecutionStatus.FAILED);
         }
       }
-      
-      if(AJEntityResource.RESOURCE_URL.equalsIgnoreCase(entry.getKey())){
+
+      if (AJEntityResource.RESOURCE_URL.equalsIgnoreCase(entry.getKey())) {
         JsonObject resourceIdWithURLDuplicates = DBHelper.getDuplicateResourcesByURL(entry.getValue().toString());
         if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
           LOGGER.error("validateRequest : Duplicate resource URL found. So cannot go ahead with creating new resource! URL : {}", entry.getKey());
-          LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates); 
-          return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resourceIdWithURLDuplicates), ExecutionResult.ExecutionStatus.FAILED);
+          LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates);
+          return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resourceIdWithURLDuplicates),
+            ExecutionResult.ExecutionStatus.FAILED);
         }
 
       }
@@ -162,41 +160,41 @@ class UpdateResourceHandler implements DBHandler {
         if (!AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE.equalsIgnoreCase(mapValue)) {
           LOGGER.error("updateResource : content format is invalid! : {} ", entry.getKey());
           return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())),
-                  ExecutionResult.ExecutionStatus.FAILED);
+            ExecutionResult.ExecutionStatus.FAILED);
         }
       } else if (AJEntityResource.CONTENT_SUBFORMAT.equalsIgnoreCase(entry.getKey())) {
         if (mapValue == null || mapValue.isEmpty() || !mapValue.endsWith(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE)) {
           LOGGER.error("updateResource : content subformat is invalid! : {} ", entry.getKey());
           return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())),
-                  ExecutionResult.ExecutionStatus.FAILED);
+            ExecutionResult.ExecutionStatus.FAILED);
         } else {
           DBHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.CONTENT_SUBFORMAT_TYPE, mapValue);
           if (this.updateRes.hasErrors()) {
             return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
-                    ExecutionResult.ExecutionStatus.FAILED);
+              ExecutionResult.ExecutionStatus.FAILED);
           }
         }
       } else if (AJEntityResource.JSONB_FIELDS.contains(entry.getKey())) {
         DBHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.JSONB_FORMAT, mapValue);
         if (this.updateRes.hasErrors()) {
           return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
-                  ExecutionResult.ExecutionStatus.FAILED);
+            ExecutionResult.ExecutionStatus.FAILED);
         }
       } else if (AJEntityResource.UUID_FIELDS.contains(entry.getKey())) {
         DBHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.UUID_TYPE, mapValue);
         if (this.updateRes.hasErrors()) {
           return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
-                  ExecutionResult.ExecutionStatus.FAILED);
+            ExecutionResult.ExecutionStatus.FAILED);
         }
       } else {
         this.updateRes.set(entry.getKey(), entry.getValue()); // intentionally
-                                                              // kept
-                                                              // entry.getValue
-                                                              // instead of
-                                                              // mapValue as it
-                                                              // needs to handle
-                                                              // other datatypes
-                                                              // like boolean
+        // kept
+        // entry.getValue
+        // instead of
+        // mapValue as it
+        // needs to handle
+        // other datatypes
+        // like boolean
       }
     }
 
@@ -214,17 +212,17 @@ class UpdateResourceHandler implements DBHandler {
 
     // try to save
     DBHelper.setPGObject(this.updateRes, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, context.userId());
-    
+
     if (!this.updateRes.save()) {
       LOGGER.error("executeRequest : Update resource failed! {} ", this.updateRes.errors());
       return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
-              ExecutionResult.ExecutionStatus.FAILED);
+        ExecutionResult.ExecutionStatus.FAILED);
     }
 
     // save successful...try to propagate ownerData changes to other copies
     if (ownerDataToPropogateToCopies != null) {
       try {
-        DBHelper.updateOwnerDataToCopies(this.updateRes,context.resourceId(), ownerDataToPropogateToCopies, context.userId());
+        DBHelper.updateOwnerDataToCopies(this.updateRes, context.resourceId(), ownerDataToPropogateToCopies, context.userId());
         LOGGER.debug("executeRequest : Updated resource ID: " + this.updateRes.getString(AJEntityResource.RESOURCE_ID));
 
       } catch (IllegalArgumentException | SQLException e) {
@@ -234,7 +232,7 @@ class UpdateResourceHandler implements DBHandler {
     }
 
     return new ExecutionResult<>(MessageResponseFactory.createPutSuccessResponse("Location", this.updateRes.getString(AJEntityResource.RESOURCE_ID)),
-            ExecutionResult.ExecutionStatus.SUCCESSFUL);
+      ExecutionResult.ExecutionStatus.SUCCESSFUL);
   }
 
   @Override
