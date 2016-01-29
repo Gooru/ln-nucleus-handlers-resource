@@ -32,7 +32,7 @@ class DeleteResourceHandler implements DBHandler {
       LOGGER.error("checkSanity() failed. ResourceID is empty!");
       return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
-    
+
     if (context.userId() == null || context.userId().isEmpty() || context.userId().equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
       return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Anonymous user denied this action"),
         ExecutionResult.ExecutionStatus.FAILED);
@@ -41,22 +41,22 @@ class DeleteResourceHandler implements DBHandler {
     LOGGER.debug("checkSanity() passed");
     return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
   }
-  
+
   @Override
   public ExecutionResult<MessageResponse> validateRequest() {
-    
+
     this.resource = DBHelper.getResourceDetailUpForDeletion(context.resourceId());
     if (this.resource == null) {
       LOGGER.error("validateRequest : deleteResource : Object to update is not found in DB! Input resource ID: {} ", context.resourceId());
       return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
-    
+
     if (!authorized()) {
       // Update is forbidden
       return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Need to be owner/collaborator on course/collection"),
         ExecutionResult.ExecutionStatus.FAILED);
     }
-    
+
     LOGGER.debug("validateRequest() OK");
     return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
   }
@@ -69,18 +69,18 @@ class DeleteResourceHandler implements DBHandler {
       if (this.resource.hasErrors()) {
         return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.resource.errors()), ExecutionResult.ExecutionStatus.FAILED);
       }
-      
+
       this.resource.set(AJEntityResource.IS_DELETED, true);
       if (!this.resource.save()) {
         LOGGER.info("error in delete resource, returning errors");
         return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.resource.errors()),
                 ExecutionResult.ExecutionStatus.FAILED);
       }
-      
+
       resourceCopyIds.put("id", this.resource.getId().toString());  // convert to String as we get UUID here
       String creator = this.resource.getString(AJEntityResource.CREATOR_ID);
-      if (creator != null && 
-          creator.equalsIgnoreCase(context.userId()) && 
+      if (creator != null &&
+          creator.equalsIgnoreCase(context.userId()) &&
           (this.resource.getString(AJEntityResource.ORIGINAL_CONTENT_ID) == null)) {
         LOGGER.info("original resource marked as deleted successfully");
         resourceCopyIds = DBHelper.getCopiesOfAResource(this.resource, context.resourceId());
@@ -94,9 +94,9 @@ class DeleteResourceHandler implements DBHandler {
           }
         }
       }
-      
+
       return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(resourceCopyIds), ExecutionResult.ExecutionStatus.FAILED);
-    } catch (IllegalArgumentException | SQLException e) {
+    } catch (IllegalArgumentException e) {
       LOGGER.error("executeRequest : Update resource failed to propagate changes to other copies!", e);
       return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(e.getMessage()), ExecutionResult.ExecutionStatus.FAILED);
     } catch (Throwable t) {
@@ -109,7 +109,7 @@ class DeleteResourceHandler implements DBHandler {
   public boolean handlerReadOnly() {
     return false;
   }
-  
+
   private boolean authorized() {
     String creator = this.resource.getString(AJEntityResource.CREATOR_ID);
     String course = this.resource.getString(AJEntityResource.COURSE_ID);
@@ -142,9 +142,9 @@ class DeleteResourceHandler implements DBHandler {
 
     return false;
   }
- 
-  
-  
+
+
+
 
 
 }

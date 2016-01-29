@@ -13,9 +13,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class DBHelper {
+class DBHelper {
   private static final Logger LOGGER = LoggerFactory.getLogger(DBHelper.class);
-  
+
   public static final int NUM_RETRIES = 2;
 
   static AJEntityResource getResourceById(String resourceId) {
@@ -23,35 +23,35 @@ public class DBHelper {
       PGobject contentFormat = new PGobject();
       contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
       contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
-      
+
       LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.SQL_GETRESOURCEBYID, resourceId, contentFormat);
       LOGGER.debug("getResourceById : {} ", result.toString());
-  
+
       if (result.size() > 0) {
         if (result.size() > 1) {
           LOGGER.error("getResourceById : {} GOT MORE RESULTS FOR THE SAME ID", result.toString());
         }
         return result.get(0);
       }
-  
+
       LOGGER.warn("getResourceById : Resource with id : {} : not found", resourceId);
     } catch (SQLException se) {
       LOGGER.error("getResourceById : SQL Exception caught ! : {} ", se);
     }
     return null;
   }
-  
+
   static AJEntityResource getResourceDetailUpForDeletion(String resourceId) {
     LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.SQL_GETRESOURCEDETAILUPFORDELETION, resourceId, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
     LOGGER.debug("getResourceById : {} ", result.toString());
- 
+
     if (result.size() > 0) {
       if (result.size() > 1) {
         LOGGER.error("getResourceById : {} GOT MORE RESULTS FOR THE SAME ID", result.toString());
       }
       return result.get(0);
     }
- 
+
     LOGGER.warn("getResourceById : Resource with id : {} : not found", resourceId);
     return null;
   }
@@ -61,15 +61,15 @@ public class DBHelper {
    */
   static JsonObject getDuplicateResourcesByURL(String inputURL) {
     JsonObject returnValue = null;
-    
+
     try {
       PGobject contentFormat = new PGobject();
       contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
       contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
-        
+
       LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.SQL_GETDUPLICATERESOURCESBYURL, inputURL, contentFormat);
       LOGGER.debug("getDuplicateResourcesByURL ! : {} ", result.toString());
-  
+
       if (result.size() > 0) {
         JsonArray retArray = new JsonArray();
         for (AJEntityResource model : result) {
@@ -86,7 +86,7 @@ public class DBHelper {
   /*
    * populateEntityFromJson : throws exceptions
    */
-  static void populateEntityFromJson(JsonObject inputJson, AJEntityResource resource) throws SQLException, IllegalArgumentException {
+  static void populateEntityFromJson(JsonObject inputJson, AJEntityResource resource) throws IllegalArgumentException {
     String mapValue;
 
     for (Map.Entry<String, Object> entry : inputJson) {
@@ -140,17 +140,17 @@ public class DBHelper {
     if (!dataToBePropogated.isEmpty()){
       for (Map.Entry<String, Object> entry : dataToBePropogated) {
         mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
-        
+
         if (AJEntityResource.NOTNULL_FIELDS.contains(entry.getKey())) {
           if (mapValue == null || mapValue.isEmpty()) {
             throw new IllegalArgumentException("Null value input for : " + entry.getKey());
           }
         }
-  
+
         LOGGER.debug("updateOwnerDataToCopies: OwnerResourceID {}", entry.getKey());
-  
+
         updateStmt = (updateStmt == null) ? entry.getKey() + " = ?" : updateStmt + ", " + entry.getKey() + " = ?";
-  
+
         if (AJEntityResource.CONTENT_FORMAT.equalsIgnoreCase(entry.getKey())) {
           if (!AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE.equalsIgnoreCase(mapValue)) {
             throw new IllegalArgumentException("content format should always be a 'resource' but {} has been sent: " + mapValue);
@@ -183,25 +183,25 @@ public class DBHelper {
           params.add(entry.getValue());
         }
       }
-    
+
 
       LOGGER.debug("updateOwnerDataToCopies: Statement {}", updateStmt);
-  
+
       if (updateStmt != null) {
         params.add(ownerResourceId);
         params.add(originalCreator);
         numRecsUpdated = AJEntityResource.update(updateStmt, AJEntityResource.SQL_UPDATEOWNERDATATOCOPIES_WHERECLAUSE, params.toArray());
         LOGGER.debug("updateOwnerDataToCopies : Update successful. Number of records updated: {}", numRecsUpdated);
       }
-    } 
+    }
     return numRecsUpdated;
   }
-  
-  static JsonObject getCopiesOfAResource(AJEntityResource resource,String originalResourceId) throws SQLException {
+
+  static JsonObject getCopiesOfAResource(AJEntityResource resource,String originalResourceId) {
     JsonObject returnValue = null;
-  
+
     setPGObject(resource, AJEntityResource.CONTENT_FORMAT, AJEntityResource.CONTENT_FORMAT_TYPE, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
-    
+
     LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.SQL_GETCOPIESOFARESOURCE, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE, originalResourceId);
     if (result.size() > 0) {
       JsonArray retArray = new JsonArray();
@@ -213,11 +213,11 @@ public class DBHelper {
     }
     return returnValue;
   }
-  
-  static int deleteResourceCopies(AJEntityResource resource, String originalResourceId) throws SQLException, IllegalArgumentException {
+
+  static int deleteResourceCopies(AJEntityResource resource, String originalResourceId) throws IllegalArgumentException {
     // update content set is_deleted=true where content_format='resource; and original_content_id=Argument and is_deleted=false
     LOGGER.debug("deleteResourceCopies: originalResourceId {}", originalResourceId);
-    int numRecsUpdated = -1;
+    int numRecsUpdated;
     List<Object> params = new ArrayList<>();
     String updateStmt = AJEntityResource.IS_DELETED + "= ? ";
     setPGObject(resource, AJEntityResource.CONTENT_FORMAT, AJEntityResource.CONTENT_FORMAT_TYPE, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
@@ -228,9 +228,9 @@ public class DBHelper {
     numRecsUpdated = AJEntityResource.update(updateStmt, AJEntityResource.SQL_DELETERESOURCECOPIES_WHERECLAUSE, params.toArray());
     LOGGER.debug("deleteResourceCopies : Update successful and is_deleted set to true for all copies of the resource {} . Number of records updated: {}", originalResourceId, numRecsUpdated);
     return numRecsUpdated;
-      
+
   }
-  
+
   static void setPGObject(AJEntityResource resource , String field, String type, String value) {
     PGobject pgObject = new PGobject();
     pgObject.setType(type);
@@ -242,6 +242,6 @@ public class DBHelper {
       resource.errors().put(field, value);
     }
   }
-  
+
 
 }
