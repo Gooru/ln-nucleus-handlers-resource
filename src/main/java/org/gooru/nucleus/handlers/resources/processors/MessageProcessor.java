@@ -63,8 +63,9 @@ class MessageProcessor implements Processor {
       LOGGER.error("Invalid request, resource id not available. Aborting");
       return MessageResponseFactory.createInvalidRequestResponse("Invalid resource id");
     }
-     return new RepoBuilder().buildResourceRepo(context).deleteResource();
+    return new RepoBuilder().buildResourceRepo(context).deleteResource();
   }
+
   private MessageResponse processResourceUpdate() {
     ProcessorContext context = createContext();
     if (context.resourceId() == null || context.resourceId().isEmpty()) {

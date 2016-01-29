@@ -14,9 +14,8 @@ import java.util.List;
 import java.util.Map;
 
 class DBHelper {
-  private static final Logger LOGGER = LoggerFactory.getLogger(DBHelper.class);
-
   public static final int NUM_RETRIES = 2;
+  private static final Logger LOGGER = LoggerFactory.getLogger(DBHelper.class);
 
   static AJEntityResource getResourceById(String resourceId) {
     try {
@@ -42,7 +41,8 @@ class DBHelper {
   }
 
   static AJEntityResource getResourceDetailUpForDeletion(String resourceId) {
-    LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.SQL_GETRESOURCEDETAILUPFORDELETION, resourceId, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
+    LazyList<AJEntityResource> result =
+      AJEntityResource.findBySQL(AJEntityResource.SQL_GETRESOURCEDETAILUPFORDELETION, resourceId, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
     LOGGER.debug("getResourceById : {} ", result.toString());
 
     if (result.size() > 0) {
@@ -137,7 +137,7 @@ class DBHelper {
     String mapValue;
     List<Object> params = new ArrayList<>();
     String updateStmt = null;
-    if (!dataToBePropogated.isEmpty()){
+    if (!dataToBePropogated.isEmpty()) {
       for (Map.Entry<String, Object> entry : dataToBePropogated) {
         mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
 
@@ -197,12 +197,13 @@ class DBHelper {
     return numRecsUpdated;
   }
 
-  static JsonObject getCopiesOfAResource(AJEntityResource resource,String originalResourceId) {
+  static JsonObject getCopiesOfAResource(AJEntityResource resource, String originalResourceId) {
     JsonObject returnValue = null;
 
     setPGObject(resource, AJEntityResource.CONTENT_FORMAT, AJEntityResource.CONTENT_FORMAT_TYPE, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
 
-    LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.SQL_GETCOPIESOFARESOURCE, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE, originalResourceId);
+    LazyList<AJEntityResource> result =
+      AJEntityResource.findBySQL(AJEntityResource.SQL_GETCOPIESOFARESOURCE, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE, originalResourceId);
     if (result.size() > 0) {
       JsonArray retArray = new JsonArray();
       for (AJEntityResource model : result) {
@@ -226,12 +227,14 @@ class DBHelper {
     params.add(originalResourceId);
 
     numRecsUpdated = AJEntityResource.update(updateStmt, AJEntityResource.SQL_DELETERESOURCECOPIES_WHERECLAUSE, params.toArray());
-    LOGGER.debug("deleteResourceCopies : Update successful and is_deleted set to true for all copies of the resource {} . Number of records updated: {}", originalResourceId, numRecsUpdated);
+    LOGGER
+      .debug("deleteResourceCopies : Update successful and is_deleted set to true for all copies of the resource {} . Number of records updated: {}",
+        originalResourceId, numRecsUpdated);
     return numRecsUpdated;
 
   }
 
-  static void setPGObject(AJEntityResource resource , String field, String type, String value) {
+  static void setPGObject(AJEntityResource resource, String field, String type, String value) {
     PGobject pgObject = new PGobject();
     pgObject.setType(type);
     try {
