@@ -42,7 +42,13 @@ public class TransactionExecutor {
       executionResult = handler.validateRequest();
       if (executionResult.continueProcessing()) {
         executionResult = handler.executeRequest();
-        Base.commitTransaction();
+        if (executionResult.isSuccessful()) {
+          Base.commitTransaction();
+        } else {
+          Base.rollbackTransaction();
+        }
+      } else {
+        Base.rollbackTransaction();
       }
       return executionResult;
     } catch (Throwable e) {
@@ -56,7 +62,7 @@ public class TransactionExecutor {
         try {
           Base.connection().setReadOnly(false);
         } catch (SQLException e) {
-          LOGGER.error("Exception while marking connetion to be read/write", e);
+          LOGGER.error("Exception while marking connection to be read/write", e);
         }
       }
       Base.close();
