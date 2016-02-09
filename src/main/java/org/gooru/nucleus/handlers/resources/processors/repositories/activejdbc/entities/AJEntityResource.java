@@ -52,7 +52,7 @@ public class AJEntityResource extends Model {
 
   public static final List<String> RESOURCE_SPECIFIC_FIELDS = new ArrayList<>(Arrays
     .asList(RESOURCE_ID, RESOURCE_TITLE, RESOURCE_URL, CREATOR_ID, MODIFIER_ID, ORIGINAL_CREATOR_ID, ORIGINAL_CONTENT_ID, PUBLISH_DATE, NARRATION,
-      DESCRIPTION, CONTENT_FORMAT, CONTENT_SUBFORMAT, METADATA, TAXONOMY, DEPTH_OF_KNOWLEDGE, THUMBNAIL, RESOURCE_INFO, IS_COPYRIGHT_OWNER,
+      DESCRIPTION, CONTENT_SUBFORMAT, METADATA, TAXONOMY, DEPTH_OF_KNOWLEDGE, THUMBNAIL, RESOURCE_INFO, IS_COPYRIGHT_OWNER,
       COPYRIGHT_OWNER, VISIBLE_ON_PROFILE, RESOURCE_INFO, VISIBLE_ON_PROFILE, DISPLAY_GUIDE, ACCESSIBILITY, COURSE_ID, UNIT_ID, LESSON_ID,
       COLLECTION_ID));
 
@@ -66,7 +66,7 @@ public class AJEntityResource extends Model {
 
   // not null fields in db
   public static final List<String> NOTNULL_FIELDS =
-    new ArrayList<>(Arrays.asList(RESOURCE_TITLE, CREATOR_ID, MODIFIER_ID, ORIGINAL_CREATOR_ID, CONTENT_FORMAT, CONTENT_SUBFORMAT));
+    new ArrayList<>(Arrays.asList(RESOURCE_TITLE, CREATOR_ID, MODIFIER_ID, ORIGINAL_CREATOR_ID, CONTENT_SUBFORMAT));
 
 
   // <TBD> - Need to decide
@@ -93,14 +93,14 @@ public class AJEntityResource extends Model {
     "SELECT id FROM content WHERE url = ? AND content_format = ?::content_format_type AND original_content_id is null AND is_deleted = false";
 
   public static final String SQL_GETRESOURCEDETAILUPFORDELETION =
-    "SELECT id, creator_id, content_format, modifier_by, original_content_id, original_creator_id, is_deleted, course_id, unit_id, lesson_id, " +
+    "SELECT id, creator_id, content_format, modifier_id, original_content_id, original_creator_id, is_deleted, course_id, unit_id, lesson_id, " +
       "collection_id FROM content WHERE id=?::uuid AND content_format = ?::content_format_type AND is_deleted = false";
 
   public static final String SQL_UPDATEOWNERDATATOCOPIES_WHERECLAUSE =
     "original_content_id = ?::uuid AND original_creator_id = ?::uuid AND is_deleted = false";
 
   public static final String SQL_GETCOPIESOFARESOURCE =
-    " SELECT id FROM content WHERE content_format = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
+    " SELECT id FROM content WHERE  = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
 
   public static final String SQL_DELETERESOURCECOPIES_WHERECLAUSE =
     " content_format = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
