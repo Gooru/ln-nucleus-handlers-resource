@@ -37,7 +37,8 @@ public class MessageConstants {
 
   // Event operation names:
   public static final String MSG_OP_EVT_RES_CREATE = "event.resource.create";
-  public static final String MSG_OP_EVT_RES_GET = "event.resource.get";
+  public static final String MSG_OP_EVT_RES_UPDATE = "event.resource.update";
+  public static final String MSG_OP_EVT_RES_DELETE = "event.resource.delete";
 
 
 }
