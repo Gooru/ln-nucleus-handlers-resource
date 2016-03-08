@@ -42,17 +42,12 @@ public class MessageResponseFactory {
   }
 
   public static MessageResponse createGetSuccessResponse(JsonObject responseBody) {
-    JsonObject eventData = new JsonObject();
-    eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_RES_GET);
-    eventData.put(MessageConstants.MSG_EVENT_BODY, responseBody);
-
-    return new MessageResponse.Builder().successful().setStatusOkay().setContentTypeJson().setResponseBody(responseBody).setEventData(eventData)
-                                        .build();
+    return new MessageResponse.Builder().successful().setStatusOkay().setContentTypeJson().setResponseBody(responseBody).build();
   }
 
   public static MessageResponse createPutSuccessResponse(String key, String value) {
     JsonObject eventData = new JsonObject();
-    eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_RES_UPDATE);
+    eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_EVT_RES_UPDATE);
     eventData.put(MessageConstants.MSG_EVENT_BODY, new JsonObject().put("id", value));
 
     return new MessageResponse.Builder().successful().setStatusNoOutput().setHeader(key, value).setEventData(eventData).build();
@@ -60,7 +55,7 @@ public class MessageResponseFactory {
 
   public static MessageResponse createPostSuccessResponse(String key, String value) {
     JsonObject eventData = new JsonObject();
-    eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_RES_CREATE);
+    eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_EVT_RES_CREATE);
     eventData.put(MessageConstants.MSG_EVENT_BODY, new JsonObject().put("id", value));
 
     return new MessageResponse.Builder().successful().setStatusCreated().setHeader(key, value).setEventData(eventData).build();
@@ -68,7 +63,7 @@ public class MessageResponseFactory {
 
   public static MessageResponse createDeleteSuccessResponse(JsonObject inputData) {
     JsonObject eventData = new JsonObject();
-    eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_RES_DELETE);
+    eventData.put(MessageConstants.MSG_EVENT_NAME, MessageConstants.MSG_OP_EVT_RES_DELETE);
     eventData.put(MessageConstants.MSG_EVENT_BODY, inputData);
 
     return new MessageResponse.Builder().successful().setStatusNoOutput().setEventData(eventData).build();
