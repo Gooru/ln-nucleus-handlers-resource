@@ -2,8 +2,6 @@ package org.gooru.nucleus.handlers.resources.processors;
 
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
-
-import java.util.UUID;
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.repositories.RepoBuilder;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
@@ -11,6 +9,8 @@ import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.UUID;
 
 class MessageProcessor implements Processor {
 
@@ -108,7 +108,7 @@ class MessageProcessor implements Processor {
       LOGGER.error("Invalid user id passed. Not authorized.");
       return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(), ExecutionResult.ExecutionStatus.FAILED);
     }
-    
+
     prefs = ((JsonObject) message.body()).getJsonObject(MessageConstants.MSG_KEY_PREFS);
     request = ((JsonObject) message.body()).getJsonObject(MessageConstants.MSG_HTTP_BODY);
 
@@ -125,11 +125,11 @@ class MessageProcessor implements Processor {
     // All is well, continue processing
     return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
   }
-  
+
   private boolean validateUser(String userId) {
     return !(userId == null || userId.isEmpty()) && (userId.equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS) || validateUuid(userId));
   }
-  
+
   private boolean validateUuid(String uuidString) {
     try {
       UUID.fromString(uuidString);
@@ -142,7 +142,7 @@ class MessageProcessor implements Processor {
       return false;
     }
   }
-  
+
   private boolean isIdInvalid(ProcessorContext context) {
     if (context.resourceId() == null || context.resourceId().isEmpty()) {
       LOGGER.error("Invalid request, resource id not available. Aborting");

@@ -80,7 +80,8 @@ class CreateResourceHandler implements DBHandler {
       DBHelper.setPGObject(this.createRes, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, context.userId());
       DBHelper.setPGObject(this.createRes, AJEntityResource.CREATOR_ID, AJEntityResource.UUID_TYPE, context.userId());
       DBHelper.setPGObject(this.createRes, AJEntityResource.ORIGINAL_CREATOR_ID, AJEntityResource.UUID_TYPE, context.userId());
-      DBHelper.setPGObject(this.createRes, AJEntityResource.CONTENT_FORMAT, AJEntityResource.CONTENT_FORMAT_TYPE, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
+      DBHelper.setPGObject(this.createRes, AJEntityResource.CONTENT_FORMAT, AJEntityResource.CONTENT_FORMAT_TYPE,
+        AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
 
       LOGGER.debug("validateRequest : Creating resource From MAP  : {}", this.createRes.toInsert());
 
