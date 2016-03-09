@@ -52,9 +52,8 @@ public class AJEntityResource extends Model {
 
   public static final List<String> RESOURCE_SPECIFIC_FIELDS = new ArrayList<>(Arrays
     .asList(RESOURCE_ID, RESOURCE_TITLE, RESOURCE_URL, CREATOR_ID, MODIFIER_ID, ORIGINAL_CREATOR_ID, ORIGINAL_CONTENT_ID, PUBLISH_DATE, NARRATION,
-      DESCRIPTION, CONTENT_SUBFORMAT, METADATA, TAXONOMY, DEPTH_OF_KNOWLEDGE, THUMBNAIL, RESOURCE_INFO, IS_COPYRIGHT_OWNER,
-      COPYRIGHT_OWNER, VISIBLE_ON_PROFILE, RESOURCE_INFO, VISIBLE_ON_PROFILE, DISPLAY_GUIDE, ACCESSIBILITY, COURSE_ID, UNIT_ID, LESSON_ID,
-      COLLECTION_ID));
+      DESCRIPTION, CONTENT_SUBFORMAT, METADATA, TAXONOMY, DEPTH_OF_KNOWLEDGE, THUMBNAIL, RESOURCE_INFO, IS_COPYRIGHT_OWNER, COPYRIGHT_OWNER,
+      VISIBLE_ON_PROFILE, RESOURCE_INFO, VISIBLE_ON_PROFILE, DISPLAY_GUIDE, ACCESSIBILITY, COURSE_ID, UNIT_ID, LESSON_ID, COLLECTION_ID));
 
   // jsonb fields relevant to resource
   public static final List<String> JSONB_FIELDS =
@@ -100,7 +99,7 @@ public class AJEntityResource extends Model {
     "original_content_id = ?::uuid AND original_creator_id = ?::uuid AND is_deleted = false";
 
   public static final String SQL_GETCOPIESOFARESOURCE =
-    " SELECT id FROM content WHERE  = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
+    " SELECT id FROM content WHERE content_format = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
 
   public static final String SQL_DELETERESOURCECOPIES_WHERECLAUSE =
     " content_format = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
@@ -111,4 +110,5 @@ public class AJEntityResource extends Model {
   public static final String AUTH_VIA_COLLECTION_FILTER = "id = ?::uuid and (owner_id = ?::uuid or collaborator ?? ?);";
   public static final String AUTH_VIA_COURSE_FILTER = "id = ?::uuid and (owner_id = ?::uuid or collaborator ?? ?)";
 
+  public static final String UPDATE_CONTAINER_TIMESTAMP = "update collection set updated_at = now() where id = ?::uuid and is_deleted = 'false'";
 }

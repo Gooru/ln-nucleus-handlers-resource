@@ -75,6 +75,15 @@ class DeleteResourceHandler implements DBHandler {
         return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.resource.errors()),
           ExecutionResult.ExecutionStatus.FAILED);
       }
+      Object collectionId = this.resource.get(AJEntityResource.COLLECTION_ID);
+      if (collectionId != null) {
+        int rows = Base.exec(AJEntityResource.UPDATE_CONTAINER_TIMESTAMP, collectionId);
+        if (rows != 1) {
+          LOGGER.warn("update of the collection timestamp failed for collection '{}' with resource '{}'", collectionId, context.resourceId());
+          return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse("Interaction with store failed"),
+            ExecutionResult.ExecutionStatus.FAILED);
+        }
+      }
 
       resourceCopyIds.put("id", this.resource.getId().toString());  // convert to String as we get UUID here
       String creator = this.resource.getString(AJEntityResource.CREATOR_ID);
@@ -92,6 +101,10 @@ class DeleteResourceHandler implements DBHandler {
             return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse("Resource Copies were not deleted"),
               ExecutionResult.ExecutionStatus.FAILED);
           }
+        } else {
+          LOGGER.info("Resource '{}' deleted, no copies found", context.resourceId());
+          return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(resourceCopyIds),
+            ExecutionResult.ExecutionStatus.SUCCESSFUL);
         }
       }
 
