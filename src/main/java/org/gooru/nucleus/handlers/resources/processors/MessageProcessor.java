@@ -64,7 +64,7 @@ class MessageProcessor implements Processor {
     if (isIdInvalid(context)) {
       return MessageResponseFactory.createInvalidRequestResponse("Invalid request id");
     }
-    return new RepoBuilder().buildResourceRepo(context).deleteResource();
+    return RepoBuilder.buildResourceRepo(context).deleteResource();
   }
 
   private MessageResponse processResourceUpdate() {
@@ -76,7 +76,7 @@ class MessageProcessor implements Processor {
       LOGGER.error("Invalid request, json not available. Aborting");
       return MessageResponseFactory.createInvalidRequestResponse("Invalid Json");
     }
-    return new RepoBuilder().buildResourceRepo(context).updateResource();
+    return RepoBuilder.buildResourceRepo(context).updateResource();
   }
 
   private MessageResponse processResourceGet() {
@@ -84,12 +84,12 @@ class MessageProcessor implements Processor {
     if (isIdInvalid(context)) {
       return MessageResponseFactory.createInvalidRequestResponse("Invalid request id");
     }
-    return new RepoBuilder().buildResourceRepo(context).fetchResource(); // TODO Auto-generated method stub
+    return RepoBuilder.buildResourceRepo(context).fetchResource(); // TODO Auto-generated method stub
   }
 
   private MessageResponse processResourceCreate() {
     ProcessorContext context = createContext();
-    return new RepoBuilder().buildResourceRepo(context).createResource();
+    return RepoBuilder.buildResourceRepo(context).createResource();
   }
 
   private ProcessorContext createContext() {
@@ -126,11 +126,11 @@ class MessageProcessor implements Processor {
     return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
   }
 
-  private boolean validateUser(String userId) {
+  private static boolean validateUser(String userId) {
     return !(userId == null || userId.isEmpty()) && (userId.equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS) || validateUuid(userId));
   }
 
-  private boolean validateUuid(String uuidString) {
+  private static boolean validateUuid(String uuidString) {
     try {
       UUID.fromString(uuidString);
       return true;
@@ -143,7 +143,7 @@ class MessageProcessor implements Processor {
     }
   }
 
-  private boolean isIdInvalid(ProcessorContext context) {
+  private static boolean isIdInvalid(ProcessorContext context) {
     if (context.resourceId() == null || context.resourceId().isEmpty()) {
       LOGGER.error("Invalid request, resource id not available. Aborting");
       return true;

@@ -1,6 +1,6 @@
 package org.gooru.nucleus.handlers.resources.constants;
 
-public class MessageConstants {
+public final class MessageConstants {
 
   public static final String MSG_HEADER_OP = "mb.operation";
   public static final String MSG_HEADER_TOKEN = "session.token";
@@ -41,4 +41,7 @@ public class MessageConstants {
   public static final String MSG_OP_EVT_RES_DELETE = "event.resource.delete";
 
 
+  private MessageConstants() {
+    throw new AssertionError();
+  }
 }

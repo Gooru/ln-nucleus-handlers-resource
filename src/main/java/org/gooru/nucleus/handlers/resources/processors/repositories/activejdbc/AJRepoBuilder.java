@@ -6,11 +6,14 @@ import org.gooru.nucleus.handlers.resources.processors.repositories.ResourceRepo
 /**
  * Created by ashish on 7/1/16.
  */
-public class AJRepoBuilder {
+public final class AJRepoBuilder {
 
-  public ResourceRepo buildResourceRepo(ProcessorContext context) {
+  public static ResourceRepo buildResourceRepo(ProcessorContext context) {
     return new AJResourceRepo(context);
   }
 
+  private AJRepoBuilder() {
+    throw new AssertionError();
+  }
 
 }

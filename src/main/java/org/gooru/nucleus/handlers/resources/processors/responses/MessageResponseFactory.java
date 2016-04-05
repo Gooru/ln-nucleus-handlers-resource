@@ -7,7 +7,11 @@ import org.javalite.activejdbc.Errors;
 import java.util.Map;
 
 
-public class MessageResponseFactory {
+public final class MessageResponseFactory {
+  private MessageResponseFactory() {
+    throw new AssertionError();
+  }
+
   public static MessageResponse createInvalidRequestResponse() {
     return new MessageResponse.Builder().failed().setStatusBadRequest().build();
   }

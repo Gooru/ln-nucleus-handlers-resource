@@ -73,7 +73,7 @@ class UpdateResourceHandler implements DBHandler {
     if (!resourceIrrelevantFields.toString().isEmpty()) {
       LOGGER.info("request data validation failed for '{}'", resourceIrrelevantFields.toString());
       return new ExecutionResult<>(MessageResponseFactory
-        .createInvalidRequestResponse("Resource irrelevant fields are being sent in the request '" + resourceIrrelevantFields.toString() + "'"),
+        .createInvalidRequestResponse("Resource irrelevant fields are being sent in the request '" + resourceIrrelevantFields.toString() + '\''),
         ExecutionStatus.FAILED);
     }
 

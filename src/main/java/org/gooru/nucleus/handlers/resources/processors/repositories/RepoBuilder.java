@@ -6,10 +6,13 @@ import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.A
 /**
  * Created by ashish on 29/12/15.
  */
-public class RepoBuilder {
+public final class RepoBuilder {
 
-  public ResourceRepo buildResourceRepo(ProcessorContext context) {
-    return new AJRepoBuilder().buildResourceRepo(context);
+  public static ResourceRepo buildResourceRepo(ProcessorContext context) {
+    return AJRepoBuilder.buildResourceRepo(context);
   }
 
+  private RepoBuilder() {
+    throw new AssertionError();
+  }
 }

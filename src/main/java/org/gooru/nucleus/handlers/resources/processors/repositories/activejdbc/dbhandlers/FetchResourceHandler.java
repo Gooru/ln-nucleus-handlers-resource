@@ -3,6 +3,7 @@ package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.
 import io.vertx.core.json.JsonObject;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.formatter.JsonFormatterBuilder;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
@@ -47,9 +48,9 @@ class FetchResourceHandler implements DBHandler {
     AJEntityResource result = DBHelper.getResourceById(context.resourceId());
 
     if (result != null) {
-      return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(new JsonObject(
-        new org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.formatter.JsonFormatterBuilder()
-          .buildSimpleJsonFormatter(false, AJEntityResource.RESOURCE_SPECIFIC_FIELDS).toJson(result))), ExecutionResult.ExecutionStatus.SUCCESSFUL);
+      return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(
+        new JsonObject(JsonFormatterBuilder.buildSimpleJsonFormatter(false, AJEntityResource.RESOURCE_SPECIFIC_FIELDS).toJson(result))),
+        ExecutionResult.ExecutionStatus.SUCCESSFUL);
 
     }
 

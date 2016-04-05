@@ -13,9 +13,13 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-class DBHelper {
+final class DBHelper {
   public static final int NUM_RETRIES = 2;
   private static final Logger LOGGER = LoggerFactory.getLogger(DBHelper.class);
+
+  private DBHelper() {
+    throw new AssertionError();
+  }
 
   static AJEntityResource getResourceById(String resourceId) {
     try {

@@ -14,11 +14,11 @@ import java.sql.SQLException;
 /**
  * Created by ashish on 11/1/16.
  */
-public class TransactionExecutor {
+public final class TransactionExecutor {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(TransactionExecutor.class);
 
-  public MessageResponse executeTransaction(DBHandler handler) {
+  public static MessageResponse executeTransaction(DBHandler handler) {
     // First validations without any DB
     ExecutionResult<MessageResponse> executionResult = handler.checkSanity();
     // Now we need to run with transaction, if we are going to continue
@@ -29,7 +29,7 @@ public class TransactionExecutor {
 
   }
 
-  private ExecutionResult<MessageResponse> executeWithTransaction(DBHandler handler) {
+  private static ExecutionResult<MessageResponse> executeWithTransaction(DBHandler handler) {
     ExecutionResult<MessageResponse> executionResult;
 
     try {
@@ -67,5 +67,9 @@ public class TransactionExecutor {
       }
       Base.close();
     }
+  }
+
+  private TransactionExecutor() {
+    throw new AssertionError();
   }
 }

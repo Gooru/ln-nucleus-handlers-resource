@@ -17,22 +17,22 @@ public class AJResourceRepo implements ResourceRepo {
 
   @Override
   public MessageResponse createResource() {
-    return new TransactionExecutor().executeTransaction(new DBHandlerBuilder().buildCreateResourceHandler(context));
+    return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildCreateResourceHandler(context));
   }
 
   @Override
   public MessageResponse updateResource() {
-    return new TransactionExecutor().executeTransaction(new DBHandlerBuilder().buildUpdateResourceHandler(context));
+    return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildUpdateResourceHandler(context));
   }
 
   @Override
   public MessageResponse fetchResource() {
-    return new TransactionExecutor().executeTransaction(new DBHandlerBuilder().buildFetchResourceHandler(context));
+    return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildFetchResourceHandler(context));
 
   }
 
   @Override
   public MessageResponse deleteResource() {
-    return new TransactionExecutor().executeTransaction(new DBHandlerBuilder().buildDeleteResourceHandler(context));
+    return TransactionExecutor.executeTransaction(DBHandlerBuilder.buildDeleteResourceHandler(context));
   }
 }
