@@ -99,7 +99,7 @@ public class AJEntityResource extends Model {
     "original_content_id = ?::uuid AND original_creator_id = ?::uuid AND is_deleted = false";
 
   public static final String SQL_GETCOPIESOFARESOURCE =
-    " SELECT id FROM content WHERE content_format = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
+    " SELECT id, collection_id FROM content WHERE content_format = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
 
   public static final String SQL_DELETERESOURCECOPIES_WHERECLAUSE =
     " content_format = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";

@@ -209,11 +209,17 @@ final class DBHelper {
     LazyList<AJEntityResource> result =
       AJEntityResource.findBySQL(AJEntityResource.SQL_GETCOPIESOFARESOURCE, AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE, originalResourceId);
     if (result.size() > 0) {
-      JsonArray retArray = new JsonArray();
+      JsonArray idArray = new JsonArray();
+      JsonArray collectionIdArray = new JsonArray();
+      String collectionId;
       for (AJEntityResource model : result) {
-        retArray.add(model.get(AJEntityResource.RESOURCE_ID).toString());
+        idArray.add(model.get(AJEntityResource.RESOURCE_ID).toString());
+        collectionId = model.getString(AJEntityResource.COLLECTION_ID);
+        if (collectionId != null && !collectionId.isEmpty()) {
+          collectionIdArray.add(collectionId);
+        }
       }
-      returnValue = new JsonObject().put("resource_copy_ids", retArray);
+      returnValue = new JsonObject().put("resource_copy_ids", idArray).put(AJEntityResource.COLLECTION_ID, collectionIdArray);
       LOGGER.debug("getCopiesOfAResource ! : {} ", returnValue.toString());
     }
     return returnValue;
