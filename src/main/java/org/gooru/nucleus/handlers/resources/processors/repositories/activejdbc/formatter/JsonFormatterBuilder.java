@@ -7,12 +7,12 @@ import java.util.List;
  */
 public final class JsonFormatterBuilder {
 
-  public static JsonFormatter buildSimpleJsonFormatter(boolean pretty, List<String> attributes) {
+    public static JsonFormatter buildSimpleJsonFormatter(boolean pretty, List<String> attributes) {
 
-    return new SimpleJsonFormatter(pretty, attributes);
-  }
+        return new SimpleJsonFormatter(pretty, attributes);
+    }
 
-  private JsonFormatterBuilder() {
-    throw new AssertionError();
-  }
+    private JsonFormatterBuilder() {
+        throw new AssertionError();
+    }
 }
