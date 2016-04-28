@@ -28,7 +28,6 @@ public class AJEntityResource extends Model {
     public static final String CONTENT_SUBFORMAT_TYPE = "content_subformat_type";
     public static final String METADATA = "metadata";
     public static final String TAXONOMY = "taxonomy";
-    public static final String DEPTH_OF_KNOWLEDGE = "depth_of_knowledge";
     public static final String THUMBNAIL = "thumbnail";
     public static final String IS_COPYRIGHT_OWNER = "is_copyright_owner";
     public static final String COPYRIGHT_OWNER = "copyright_owner";
@@ -51,13 +50,13 @@ public class AJEntityResource extends Model {
 
     public static final List<String> RESOURCE_SPECIFIC_FIELDS = new ArrayList<>(Arrays.asList(RESOURCE_ID,
         RESOURCE_TITLE, RESOURCE_URL, CREATOR_ID, MODIFIER_ID, ORIGINAL_CREATOR_ID, ORIGINAL_CONTENT_ID, PUBLISH_DATE,
-        NARRATION, DESCRIPTION, CONTENT_SUBFORMAT, METADATA, TAXONOMY, DEPTH_OF_KNOWLEDGE, THUMBNAIL, RESOURCE_INFO,
+        NARRATION, DESCRIPTION, CONTENT_SUBFORMAT, METADATA, TAXONOMY, THUMBNAIL, RESOURCE_INFO,
         IS_COPYRIGHT_OWNER, COPYRIGHT_OWNER, VISIBLE_ON_PROFILE, RESOURCE_INFO, VISIBLE_ON_PROFILE, DISPLAY_GUIDE,
         ACCESSIBILITY, COURSE_ID, UNIT_ID, LESSON_ID, COLLECTION_ID));
 
     // jsonb fields relevant to resource
     public static final List<String> JSONB_FIELDS = new ArrayList<>(Arrays.asList(METADATA, TAXONOMY,
-        DEPTH_OF_KNOWLEDGE, COPYRIGHT_OWNER, RESOURCE_INFO, DISPLAY_GUIDE, ACCESSIBILITY));
+        COPYRIGHT_OWNER, RESOURCE_INFO, DISPLAY_GUIDE, ACCESSIBILITY));
 
     // jsonb fields relevant to resource
     public static final List<String> UUID_FIELDS = new ArrayList<>(Arrays.asList(RESOURCE_ID, CREATOR_ID, MODIFIER_ID,
@@ -71,17 +70,17 @@ public class AJEntityResource extends Model {
     // only owner (original creator of the resource) can change, which will have
     // to update all the copied records of the resource
     public static final List<String> OWNER_SPECIFIC_FIELDS =
-        new ArrayList<>(Arrays.asList(RESOURCE_TITLE, RESOURCE_URL, DESCRIPTION, DEPTH_OF_KNOWLEDGE, CONTENT_FORMAT,
+        new ArrayList<>(Arrays.asList(RESOURCE_TITLE, RESOURCE_URL, DESCRIPTION, CONTENT_FORMAT,
             CONTENT_SUBFORMAT, RESOURCE_INFO, DISPLAY_GUIDE, ACCESSIBILITY, ORIGINAL_CONTENT_ID));
 
     public static final List<String> VALID_UPDATE_FIELDS = new ArrayList<>(Arrays.asList(RESOURCE_TITLE, RESOURCE_URL,
         ORIGINAL_CREATOR_ID, ORIGINAL_CONTENT_ID, PUBLISH_DATE, NARRATION, DESCRIPTION, METADATA, TAXONOMY,
-        DEPTH_OF_KNOWLEDGE, THUMBNAIL, RESOURCE_INFO, IS_COPYRIGHT_OWNER, COPYRIGHT_OWNER, VISIBLE_ON_PROFILE,
+        THUMBNAIL, RESOURCE_INFO, IS_COPYRIGHT_OWNER, COPYRIGHT_OWNER, VISIBLE_ON_PROFILE,
         RESOURCE_INFO, VISIBLE_ON_PROFILE, DISPLAY_GUIDE, ACCESSIBILITY, COURSE_ID, UNIT_ID, LESSON_ID, COLLECTION_ID));
 
     public static final String SQL_GETRESOURCEBYID =
         " SELECT id, title, url, creator_id, modifier_id, narration, description, content_format, content_subformat, metadata, taxonomy, "
-            + "depth_of_knowledge, original_content_id, original_creator_id, is_deleted, is_copyright_owner, copyright_owner, visible_on_profile, "
+            + "original_content_id, original_creator_id, is_deleted, is_copyright_owner, copyright_owner, visible_on_profile, "
             + "thumbnail, info, display_guide, accessibility, course_id, unit_id, lesson_id, collection_id FROM content WHERE id = ?::uuid  AND "
             + "content_format = ?::content_format_type AND is_deleted = false";
 
