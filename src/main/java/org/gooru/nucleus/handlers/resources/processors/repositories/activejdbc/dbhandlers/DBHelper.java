@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityMetadataReference;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.javalite.activejdbc.LazyList;
 import org.postgresql.util.PGobject;
@@ -275,6 +276,25 @@ final class DBHelper {
             LOGGER.error("Not able to set value for field: {}, type: {}, value: {}", field, type, value);
             resource.errors().put(field, value);
         }
+    }
+    
+    static Integer getDafaultLicense() {
+        AJEntityMetadataReference metadataReference = AJEntityMetadataReference.findFirst(
+            AJEntityMetadataReference.SELECT_LICENSE, AJEntityMetadataReference.DEFAULT_LICENSE_LABEL);
+        if (metadataReference != null) {
+            return metadataReference.getInteger(AJEntityMetadataReference.ID);
+        }
+        
+        return null;
+    }
+    
+    static boolean isValidLicense(int licenseId) {
+        Long count = AJEntityMetadataReference.count(AJEntityMetadataReference.VALIDATE_LICENSE, licenseId);
+        if (count == 1) {
+            return true;
+        }
+        
+        return false;
     }
 
 }

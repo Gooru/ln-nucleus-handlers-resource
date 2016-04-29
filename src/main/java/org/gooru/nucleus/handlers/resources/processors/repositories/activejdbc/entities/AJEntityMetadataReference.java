@@ -13,4 +13,6 @@ public class AJEntityMetadataReference extends Model {
     public final static String SELECT_LICENSE = "label = ? AND format = 'license'::metadata_reference_type";
 
     public static final String DEFAULT_LICENSE_LABEL = "Public Domain";
+
+    public static final String VALIDATE_LICENSE = "id = ? AND format = 'license'::metadata_reference_type";
 }

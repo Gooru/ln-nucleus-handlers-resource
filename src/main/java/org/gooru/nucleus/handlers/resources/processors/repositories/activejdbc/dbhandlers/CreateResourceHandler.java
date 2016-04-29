@@ -5,7 +5,6 @@ import java.util.StringJoiner;
 
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityMetadataReference;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
@@ -93,13 +92,8 @@ class CreateResourceHandler implements DBHandler {
                 AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
 
             Integer licenseFromRequest = this.createRes.getInteger(AJEntityResource.LICENSE);
-            if (licenseFromRequest == null) {
-                AJEntityMetadataReference metadataReference = AJEntityMetadataReference.findFirst(
-                    AJEntityMetadataReference.SELECT_LICENSE, AJEntityMetadataReference.DEFAULT_LICENSE_LABEL);
-                if (metadataReference != null) {
-                    Integer license = metadataReference.getInteger(AJEntityMetadataReference.ID);
-                    this.createRes.setInteger(AJEntityResource.LICENSE, license);
-                }
+            if (licenseFromRequest == null || !DBHelper.isValidLicense(licenseFromRequest)) {
+                this.createRes.setInteger(AJEntityResource.LICENSE, DBHelper.getDafaultLicense());
             }
             LOGGER.debug("validateRequest : Creating resource From MAP  : {}", this.createRes.toInsert());
 

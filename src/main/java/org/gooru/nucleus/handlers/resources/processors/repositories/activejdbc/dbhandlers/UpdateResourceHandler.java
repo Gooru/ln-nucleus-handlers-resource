@@ -231,6 +231,11 @@ class UpdateResourceHandler implements DBHandler {
                 // like boolean
             }
         }
+        
+        Integer licenseFromRequest = this.updateRes.getInteger(AJEntityResource.LICENSE);
+        if (licenseFromRequest != null && !DBHelper.isValidLicense(licenseFromRequest)) {
+            this.updateRes.setInteger(AJEntityResource.LICENSE, DBHelper.getDafaultLicense());
+        }
 
         LOGGER.debug(" \n **** Model to save: {}", this.updateRes);
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
