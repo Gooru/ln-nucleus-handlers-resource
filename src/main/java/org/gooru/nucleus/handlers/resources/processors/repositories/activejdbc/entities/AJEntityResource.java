@@ -37,6 +37,7 @@ public class AJEntityResource extends Model {
     public static final String ACCESSIBILITY = "accessibility";
     public static final String IS_DELETED = "is_deleted";
     public static final String MODIFIER_ID = "modifier_id";
+    public static final String LICENSE = "license";
 
     public static final String COURSE_ID = "course_id";
     public static final String UNIT_ID = "unit_id";
@@ -52,7 +53,7 @@ public class AJEntityResource extends Model {
         RESOURCE_TITLE, RESOURCE_URL, CREATOR_ID, MODIFIER_ID, ORIGINAL_CREATOR_ID, ORIGINAL_CONTENT_ID, PUBLISH_DATE,
         NARRATION, DESCRIPTION, CONTENT_SUBFORMAT, METADATA, TAXONOMY, THUMBNAIL, RESOURCE_INFO,
         IS_COPYRIGHT_OWNER, COPYRIGHT_OWNER, VISIBLE_ON_PROFILE, RESOURCE_INFO, VISIBLE_ON_PROFILE, DISPLAY_GUIDE,
-        ACCESSIBILITY, COURSE_ID, UNIT_ID, LESSON_ID, COLLECTION_ID));
+        ACCESSIBILITY, COURSE_ID, UNIT_ID, LESSON_ID, COLLECTION_ID, LICENSE));
 
     // jsonb fields relevant to resource
     public static final List<String> JSONB_FIELDS = new ArrayList<>(Arrays.asList(METADATA, TAXONOMY,
@@ -76,13 +77,13 @@ public class AJEntityResource extends Model {
     public static final List<String> VALID_UPDATE_FIELDS = new ArrayList<>(Arrays.asList(RESOURCE_TITLE, RESOURCE_URL,
         ORIGINAL_CREATOR_ID, ORIGINAL_CONTENT_ID, PUBLISH_DATE, NARRATION, DESCRIPTION, METADATA, TAXONOMY,
         THUMBNAIL, RESOURCE_INFO, IS_COPYRIGHT_OWNER, COPYRIGHT_OWNER, VISIBLE_ON_PROFILE,
-        RESOURCE_INFO, VISIBLE_ON_PROFILE, DISPLAY_GUIDE, ACCESSIBILITY, COURSE_ID, UNIT_ID, LESSON_ID, COLLECTION_ID));
+        RESOURCE_INFO, VISIBLE_ON_PROFILE, DISPLAY_GUIDE, ACCESSIBILITY, COURSE_ID, UNIT_ID, LESSON_ID, COLLECTION_ID, LICENSE));
 
     public static final String SQL_GETRESOURCEBYID =
         " SELECT id, title, url, creator_id, modifier_id, narration, description, content_format, content_subformat, metadata, taxonomy, "
             + "original_content_id, original_creator_id, is_deleted, is_copyright_owner, copyright_owner, visible_on_profile, "
-            + "thumbnail, info, display_guide, accessibility, course_id, unit_id, lesson_id, collection_id FROM content WHERE id = ?::uuid  AND "
-            + "content_format = ?::content_format_type AND is_deleted = false";
+            + "thumbnail, info, display_guide, accessibility, course_id, unit_id, lesson_id, collection_id, license FROM content WHERE id = ?::uuid"
+            + " AND content_format = ?::content_format_type AND is_deleted = false";
 
     public static final String SQL_GETDUPLICATERESOURCESBYURL =
         "SELECT id FROM content WHERE url = ? AND content_format = ?::content_format_type AND original_content_id is null AND is_deleted = false";
