@@ -23,50 +23,49 @@ public class ResourceVerticle extends AbstractVerticle {
     @Override
     public void start(Future<Void> voidFuture) throws Exception {
 
-        vertx.executeBlocking(blockingFuture -> startApplication(), future -> {
-            if (future.succeeded()) {
-                voidFuture.complete();
+        EventBus eb = vertx.eventBus();
+        vertx.executeBlocking(blockingFuture -> {
+            startApplication();
+            blockingFuture.complete();
+        }, startApplicationFuture -> {
+            if (startApplicationFuture.succeeded()) {
+                eb.consumer(MessagebusEndpoints.MBEP_RESOURCE, message -> {
+                    LOGGER.debug("Received message: " + message.body());
+                    vertx.executeBlocking(future -> {
+                        MessageResponse result = new ProcessorBuilder(message).build().process();
+                        future.complete(result);
+                    }, res -> {
+                        MessageResponse result = (MessageResponse) res.result();
+                        LOGGER.debug("Returning message: " + result.reply());
+                        message.reply(result.reply(), result.deliveryOptions());
+                        LOGGER.debug("Event Data : " + result.event());
+                        JsonObject eventData = result.event();
+                        if (eventData != null) {
+                            String sessionToken =
+                                ((JsonObject) message.body()).getString(MessageConstants.MSG_HEADER_TOKEN);
+                            if (sessionToken != null && !sessionToken.isEmpty()) {
+                                eventData.put(MessageConstants.MSG_HEADER_TOKEN, sessionToken);
+                            } else {
+                                LOGGER.warn("Invalid session token received");
+                            }
+                            eb.publish(MessagebusEndpoints.MBEP_EVENT, eventData);
+                        }
+                    });
+                }).completionHandler(result -> {
+                    if (result.succeeded()) {
+                        LOGGER.info("Resource end point ready to listen");
+                        voidFuture.complete();
+                    } else {
+                        LOGGER.error("Error registering the resource handler. Halting the Resource machinery");
+                        voidFuture.fail(result.cause());
+                        Runtime.getRuntime().halt(1);
+                    }
+                });
             } else {
                 voidFuture.fail("Not able to initialize the Resource machinery properly");
             }
         });
 
-        EventBus eb = vertx.eventBus();
-
-        eb.consumer(MessagebusEndpoints.MBEP_RESOURCE, message -> {
-
-            LOGGER.debug("Received message: " + message.body());
-
-            vertx.executeBlocking(future -> {
-                MessageResponse result = new ProcessorBuilder(message).build().process();
-                future.complete(result);
-            } , res -> {
-                MessageResponse result = (MessageResponse) res.result();
-
-                LOGGER.debug("Returning message: " + result.reply());
-                message.reply(result.reply(), result.deliveryOptions());
-
-                LOGGER.debug("Event Data : " + result.event());
-                JsonObject eventData = result.event();
-                if (eventData != null) {
-                    String sessionToken = ((JsonObject) message.body()).getString(MessageConstants.MSG_HEADER_TOKEN);
-                    if (sessionToken != null && !sessionToken.isEmpty()) {
-                        eventData.put(MessageConstants.MSG_HEADER_TOKEN, sessionToken);
-                    } else {
-                        LOGGER.warn("Invalid session token received");
-                    }
-                    eb.publish(MessagebusEndpoints.MBEP_EVENT, eventData);
-                }
-            });
-
-        }).completionHandler(result -> {
-            if (result.succeeded()) {
-                LOGGER.info("Resource end point ready to listen");
-            } else {
-                LOGGER.error("Error registering the resource handler. Halting the Resource machinery");
-                Runtime.getRuntime().halt(1);
-            }
-        });
     }
 
     @Override
