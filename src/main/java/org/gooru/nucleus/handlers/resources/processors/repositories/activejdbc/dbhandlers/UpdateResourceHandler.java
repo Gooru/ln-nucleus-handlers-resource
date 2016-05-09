@@ -99,11 +99,11 @@ class UpdateResourceHandler implements DBHandler {
             return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
-        String originalCreator = fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CREATOR_ID);
-        LOGGER.debug("validateRequest : updateResource : Original creator from DB = {}.", originalCreator);
+        String creator = fetchDBResourceData.getString(AJEntityResource.CREATOR_ID);
+        LOGGER.debug("validateRequest : updateResource : creator from DB = {}.", creator);
 
-        if ((originalCreator != null) && !originalCreator.isEmpty()) {
-            isOwner = originalCreator.equalsIgnoreCase(context.userId());
+        if ((creator != null) && !creator.isEmpty()) {
+            isOwner = creator.equalsIgnoreCase(context.userId());
         }
         LOGGER.debug("validateRequest : updateResource : Ok! So, who is trying to update content? {}.",
             (isOwner) ? "owner" : "someone else");
