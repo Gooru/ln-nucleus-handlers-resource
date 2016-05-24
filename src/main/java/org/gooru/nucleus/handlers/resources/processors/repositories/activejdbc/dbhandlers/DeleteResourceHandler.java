@@ -34,8 +34,8 @@ class DeleteResourceHandler implements DBHandler {
                 ExecutionResult.ExecutionStatus.FAILED);
         }
 
-        if (context.userId() == null || context.userId().isEmpty()
-            || context.userId().equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
+        if (context.userId() == null || context.userId().isEmpty() || context.userId()
+            .equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
             return new ExecutionResult<>(
                 MessageResponseFactory.createForbiddenResponse("Anonymous user denied this action"),
                 ExecutionResult.ExecutionStatus.FAILED);
@@ -50,9 +50,9 @@ class DeleteResourceHandler implements DBHandler {
 
         this.resource = DBHelper.getResourceDetailUpForDeletion(context.resourceId());
         if (this.resource == null) {
-            LOGGER.error(
-                "validateRequest : deleteResource : Object to update is not found in DB! Input resource ID: {} ",
-                context.resourceId());
+            LOGGER
+                .error("validateRequest : deleteResource : Object to update is not found in DB! Input resource ID: {} ",
+                    context.resourceId());
             return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
@@ -99,17 +99,10 @@ class DeleteResourceHandler implements DBHandler {
                 }
             }
 
-            resourceCopyIds.put("id", this.resource.getId().toString());  // convert
-                                                                          // to
-                                                                          // String
-                                                                          // as
-                                                                          // we
-                                                                          // get
-                                                                          // UUID
-                                                                          // here
+            resourceCopyIds.put("id", this.resource.getId().toString());  // convert to String as we get UUID here
             String creator = this.resource.getString(AJEntityResource.CREATOR_ID);
-            if (creator != null && creator.equalsIgnoreCase(context.userId())
-                && (this.resource.getString(AJEntityResource.ORIGINAL_CONTENT_ID) == null)) {
+            if (creator != null && creator.equalsIgnoreCase(context.userId()) && (
+                this.resource.getString(AJEntityResource.ORIGINAL_CONTENT_ID) == null)) {
                 LOGGER.info("original resource marked as deleted successfully");
                 resourceCopyIds = DBHelper.getCopiesOfAResource(this.resource, context.resourceId());
                 if (resourceCopyIds != null && !resourceCopyIds.isEmpty()) {
@@ -128,10 +121,11 @@ class DeleteResourceHandler implements DBHandler {
                     return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(resourceCopyIds),
                         ExecutionResult.ExecutionStatus.SUCCESSFUL);
                 }
-            }
+            } else {
+                return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(resourceCopyIds),
+                    ExecutionResult.ExecutionStatus.SUCCESSFUL);
 
-            return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(resourceCopyIds),
-                ExecutionResult.ExecutionStatus.FAILED);
+            }
         } catch (IllegalArgumentException e) {
             LOGGER.error("executeRequest : Update resource failed to propagate changes to other copies!", e);
             return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(e.getMessage()),
@@ -163,8 +157,9 @@ class DeleteResourceHandler implements DBHandler {
                 // Check if user is one of collaborator on course, we do not
                 // need to check the owner as course owner should be resource
                 // creator
-                authRecordCount = Base.count(AJEntityResource.TABLE_COURSE, AJEntityResource.AUTH_VIA_COURSE_FILTER,
-                    course, context.userId(), context.userId());
+                authRecordCount =
+                    Base.count(AJEntityResource.TABLE_COURSE, AJEntityResource.AUTH_VIA_COURSE_FILTER, course,
+                        context.userId(), context.userId());
                 if (authRecordCount >= 1) {
                     // Auth check successful
                     LOGGER.debug("Auth check successful based on course: {}", course);
@@ -173,8 +168,9 @@ class DeleteResourceHandler implements DBHandler {
             } else if (collection != null) {
                 // Check if the user is one of collaborator on collection, we do
                 // not need to check about course now
-                authRecordCount = Base.count(AJEntityResource.TABLE_COLLECTION,
-                    AJEntityResource.AUTH_VIA_COLLECTION_FILTER, collection, context.userId(), context.userId());
+                authRecordCount =
+                    Base.count(AJEntityResource.TABLE_COLLECTION, AJEntityResource.AUTH_VIA_COLLECTION_FILTER,
+                        collection, context.userId(), context.userId());
                 if (authRecordCount >= 1) {
                     LOGGER.debug("Auth check successful based on collection: {}", collection);
                     return true;
