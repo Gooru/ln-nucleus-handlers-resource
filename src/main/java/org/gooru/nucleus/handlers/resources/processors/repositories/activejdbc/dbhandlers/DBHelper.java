@@ -51,16 +51,16 @@ final class DBHelper {
         LazyList<AJEntityResource> result =
             AJEntityResource.findBySQL(AJEntityResource.SQL_GETRESOURCEDETAILUPFORDELETION, resourceId,
                 AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
-        LOGGER.debug("getResourceById : {} ", result.toString());
+        LOGGER.debug("getResourceDetailUpForDeletion : {} ", result.toString());
 
         if (result.size() > 0) {
             if (result.size() > 1) {
-                LOGGER.error("getResourceById : {} GOT MORE RESULTS FOR THE SAME ID", result.toString());
+                LOGGER.error("getResourceDetailUpForDeletion : {} GOT MORE RESULTS FOR THE SAME ID", result.toString());
             }
             return result.get(0);
         }
 
-        LOGGER.warn("getResourceById : Resource with id : {} : not found", resourceId);
+        LOGGER.warn("getResourceDetailUpForDeletion : Resource with id : {} : not found", resourceId);
         return null;
     }
 
@@ -277,24 +277,21 @@ final class DBHelper {
             resource.errors().put(field, value);
         }
     }
-    
+
     static Integer getDafaultLicense() {
         AJEntityMetadataReference metadataReference = AJEntityMetadataReference.findFirst(
             AJEntityMetadataReference.SELECT_LICENSE, AJEntityMetadataReference.DEFAULT_LICENSE_LABEL);
         if (metadataReference != null) {
             return metadataReference.getInteger(AJEntityMetadataReference.ID);
         }
-        
+
         return null;
     }
-    
+
     static boolean isValidLicense(int licenseId) {
         Long count = AJEntityMetadataReference.count(AJEntityMetadataReference.VALIDATE_LICENSE, licenseId);
-        if (count == 1) {
-            return true;
-        }
-        
-        return false;
+        return count == 1;
+
     }
 
 }
