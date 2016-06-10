@@ -99,7 +99,6 @@ class DeleteResourceHandler implements DBHandler {
                 }
             }
 
-            resourceCopyIds.put("id", this.resource.getId().toString());  // convert to String as we get UUID here
             String creator = this.resource.getString(AJEntityResource.CREATOR_ID);
             if (creator != null && creator.equalsIgnoreCase(context.userId()) && (
                 this.resource.getString(AJEntityResource.ORIGINAL_CONTENT_ID) == null)) {
