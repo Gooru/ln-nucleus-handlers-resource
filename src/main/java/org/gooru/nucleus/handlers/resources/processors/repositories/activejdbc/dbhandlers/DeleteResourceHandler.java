@@ -70,7 +70,6 @@ class DeleteResourceHandler implements DBHandler {
 
     @Override
     public ExecutionResult<MessageResponse> executeRequest() {
-        JsonObject resourceCopyIds = new JsonObject();
         try {
             DBHelper.setPGObject(this.resource, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE,
                 this.context.userId());
@@ -99,12 +98,11 @@ class DeleteResourceHandler implements DBHandler {
                 }
             }
 
-            resourceCopyIds.put("id", this.resource.getId().toString());  // convert to String as we get UUID here
             String creator = this.resource.getString(AJEntityResource.CREATOR_ID);
             if (creator != null && creator.equalsIgnoreCase(context.userId()) && (
                 this.resource.getString(AJEntityResource.ORIGINAL_CONTENT_ID) == null)) {
                 LOGGER.info("original resource marked as deleted successfully");
-                resourceCopyIds = DBHelper.getCopiesOfAResource(this.resource, context.resourceId());
+                JsonObject resourceCopyIds = DBHelper.getCopiesOfAResource(this.resource, context.resourceId());
                 if (resourceCopyIds != null && !resourceCopyIds.isEmpty()) {
                     int deletedResourceCopies = DBHelper.deleteResourceCopies(this.resource, context.resourceId());
                     if (deletedResourceCopies >= 0) {
@@ -118,13 +116,12 @@ class DeleteResourceHandler implements DBHandler {
                     }
                 } else {
                     LOGGER.info("Resource '{}' deleted, no copies found", context.resourceId());
-                    return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(resourceCopyIds),
+                    return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(new JsonObject().put("id", context.resourceId())),
                         ExecutionResult.ExecutionStatus.SUCCESSFUL);
                 }
             } else {
-                return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(resourceCopyIds),
+                return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(new JsonObject().put("id", context.resourceId())),
                     ExecutionResult.ExecutionStatus.SUCCESSFUL);
-
             }
         } catch (IllegalArgumentException e) {
             LOGGER.error("executeRequest : Update resource failed to propagate changes to other copies!", e);

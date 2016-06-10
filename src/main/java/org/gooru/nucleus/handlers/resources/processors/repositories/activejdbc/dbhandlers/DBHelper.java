@@ -237,7 +237,7 @@ final class DBHelper {
                 }
             }
             returnValue = new JsonObject().put("resource_copy_ids", idArray).put(AJEntityResource.COLLECTION_ID,
-                collectionIdArray);
+                collectionIdArray).put("id", originalResourceId);
             LOGGER.debug("getCopiesOfAResource ! : {} ", returnValue.toString());
         }
         return returnValue;
