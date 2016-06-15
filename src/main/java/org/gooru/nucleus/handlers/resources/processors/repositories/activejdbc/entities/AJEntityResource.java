@@ -93,7 +93,7 @@ public class AJEntityResource extends Model {
             + "collection_id FROM content WHERE id=?::uuid AND content_format = ?::content_format_type AND is_deleted = false";
 
     public static final String SQL_UPDATEOWNERDATATOCOPIES_WHERECLAUSE =
-        "original_content_id = ?::uuid AND original_creator_id = ?::uuid AND is_deleted = false";
+        "content_format = 'resource'::content_format_type AND original_content_id = ?::uuid AND original_creator_id = ?::uuid AND is_deleted = false";
 
     public static final String SQL_GETCOPIESOFARESOURCE =
         " SELECT id, collection_id FROM content WHERE content_format = ?::content_format_type AND original_content_id = ?::uuid AND is_deleted = false";
@@ -106,7 +106,7 @@ public class AJEntityResource extends Model {
     public static final String TABLE_COURSE = "course";
     public static final String TABLE_COLLECTION = "collection";
     public static final String AUTH_VIA_COLLECTION_FILTER =
-        "id = ?::uuid and (owner_id = ?::uuid or collaborator ?? ?);";
+        "id = ?::uuid and (owner_id = ?::uuid or collaborator ?? ?)";
     public static final String AUTH_VIA_COURSE_FILTER = "id = ?::uuid and (owner_id = ?::uuid or collaborator ?? ?)";
 
     public static final String UPDATE_CONTAINER_TIMESTAMP =
