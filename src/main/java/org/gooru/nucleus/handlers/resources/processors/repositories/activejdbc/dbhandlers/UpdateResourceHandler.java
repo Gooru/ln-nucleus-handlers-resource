@@ -100,9 +100,10 @@ class UpdateResourceHandler implements DBHandler {
                 ExecutionResult.ExecutionStatus.FAILED);
         }
         String creator = fetchDBResourceData.getString(AJEntityResource.CREATOR_ID);
+        String originalCreator = fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CREATOR_ID);
         LOGGER.debug("validateRequest : updateResource : creator from DB = {}.", creator);
 
-        if ((creator != null) && !creator.isEmpty()) {
+        if (originalCreator == null && creator != null && !creator.isEmpty()) {
             isOwner = creator.equalsIgnoreCase(context.userId());
         }
         LOGGER.debug("validateRequest : updateResource : Ok! So, who is trying to update content? {}.",
@@ -159,11 +160,11 @@ class UpdateResourceHandler implements DBHandler {
 
             // mandatory and owner specific items may be overlapping...so do a
             // separate check not as ELSE condition
-            if (!isOwner && AJEntityResource.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
+            if (!isOwner && !AJEntityResource.COPY_UPDATE_FIELDS.contains(entry.getKey())) {
                 // LOGGER.debug("validateRequest updateResource : Not owner but
                 // changing
                 // owner specific fields?");
-                LOGGER.error("Error updating resource. Field: {} : can be updated only by owner of the resource.",
+                LOGGER.error("Error updating resource. Field: {} : can not be allowed to update for resource copy.",
                     entry.getKey());
                 return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(),
                     ExecutionResult.ExecutionStatus.FAILED);
