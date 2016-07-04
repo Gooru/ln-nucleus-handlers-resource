@@ -9,6 +9,7 @@ import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
+import org.javalite.activejdbc.Base;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
 import org.slf4j.Logger;
@@ -23,6 +24,7 @@ class UpdateResourceHandler implements DBHandler {
     private final ProcessorContext context;
     private JsonObject ownerDataToPropogateToCopies;
     private AJEntityResource updateRes;
+    private AJEntityResource fetchDBResourceData;
 
     public UpdateResourceHandler(ProcessorContext context) {
         this.context = context;
@@ -91,16 +93,16 @@ class UpdateResourceHandler implements DBHandler {
     @Override
     public ExecutionResult<MessageResponse> validateRequest() {
         // fetch resource from DB based on Id received
-        AJEntityResource fetchDBResourceData = DBHelper.getResourceById(context.resourceId());
-        if (fetchDBResourceData == null) {
+        this.fetchDBResourceData = DBHelper.getResourceById(context.resourceId());
+        if (this.fetchDBResourceData == null) {
             LOGGER.error(
                 "validateRequest : updateResource : Object to update is not found in DB! Input resource ID: {} ",
                 context.resourceId());
             return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
-        String creator = fetchDBResourceData.getString(AJEntityResource.CREATOR_ID);
-        String originalCreator = fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CREATOR_ID);
+        String creator = this.fetchDBResourceData.getString(AJEntityResource.CREATOR_ID);
+        String originalCreator = this.fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CREATOR_ID);
         LOGGER.debug("validateRequest : updateResource : creator from DB = {}.", creator);
 
         if (originalCreator == null && creator != null && !creator.isEmpty()) {
@@ -109,6 +111,13 @@ class UpdateResourceHandler implements DBHandler {
         LOGGER.debug("validateRequest : updateResource : Ok! So, who is trying to update content? {}.",
             (isOwner) ? "owner" : "someone else");
 
+        if (!authorized()) {
+            // Update is forbidden
+            return new ExecutionResult<>(
+                MessageResponseFactory.createForbiddenResponse("Need to be owner/collaborator on course/collection"),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
+        
         String mapValue;
 
         // now mandatory field checks on input resource data and if contains
@@ -285,6 +294,45 @@ class UpdateResourceHandler implements DBHandler {
 
     @Override
     public boolean handlerReadOnly() {
+        return false;
+    }
+    
+    private boolean authorized() {
+        String creator = this.fetchDBResourceData.getString(AJEntityResource.CREATOR_ID);
+        String course = this.fetchDBResourceData.getString(AJEntityResource.COURSE_ID);
+        String collection = this.fetchDBResourceData.getString(AJEntityResource.COLLECTION_ID);
+        if (creator != null && creator.equalsIgnoreCase(context.userId()) && course == null && collection == null) {
+            // Since the creator is modifying, and it is not part of any
+            // collection or course, then owner should be able to modify
+            return true;
+        } else {
+            // The ownership and rights flows from either collection or course
+            long authRecordCount;
+            if (course != null) {
+                // Check if user is one of collaborator on course, we do not
+                // need to check the owner as course owner should be resource
+                // creator
+                authRecordCount =
+                    Base.count(AJEntityResource.TABLE_COURSE, AJEntityResource.AUTH_VIA_COURSE_FILTER, course,
+                        context.userId(), context.userId());
+                if (authRecordCount >= 1) {
+                    // Auth check successful
+                    LOGGER.debug("Auth check successful based on course: {}", course);
+                    return true;
+                }
+            } else if (collection != null) {
+                // Check if the user is one of collaborator on collection, we do
+                // not need to check about course now
+                authRecordCount =
+                    Base.count(AJEntityResource.TABLE_COLLECTION, AJEntityResource.AUTH_VIA_COLLECTION_FILTER,
+                        collection, context.userId(), context.userId());
+                if (authRecordCount >= 1) {
+                    LOGGER.debug("Auth check successful based on collection: {}", collection);
+                    return true;
+                }
+            }
+        }
+
         return false;
     }
 }

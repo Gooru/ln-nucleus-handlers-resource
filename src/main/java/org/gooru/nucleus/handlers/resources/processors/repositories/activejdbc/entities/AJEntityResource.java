@@ -79,7 +79,7 @@ public class AJEntityResource extends Model {
         THUMBNAIL, RESOURCE_INFO, IS_COPYRIGHT_OWNER, COPYRIGHT_OWNER, VISIBLE_ON_PROFILE,
         RESOURCE_INFO, VISIBLE_ON_PROFILE, DISPLAY_GUIDE, ACCESSIBILITY, COURSE_ID, UNIT_ID, LESSON_ID, COLLECTION_ID, LICENSE));
 
-    public static final List<String> COPY_UPDATE_FIELDS = Arrays.asList(TAXONOMY, NARRATION, RESOURCE_INFO);
+    public static final List<String> COPY_UPDATE_FIELDS = Arrays.asList(TAXONOMY, NARRATION, RESOURCE_INFO, METADATA);
     
     public static final String SQL_GETRESOURCEBYID =
         " SELECT id, title, url, creator_id, modifier_id, narration, description, content_format, content_subformat, metadata, taxonomy, "
