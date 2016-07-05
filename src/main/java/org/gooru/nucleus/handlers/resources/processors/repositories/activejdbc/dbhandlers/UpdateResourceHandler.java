@@ -11,6 +11,7 @@ import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
+import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,10 +20,11 @@ import io.vertx.core.json.JsonObject;
 class UpdateResourceHandler implements DBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateResourceHandler.class);
-    private static boolean isOwner = false;
+    private boolean isOwner = false;
     private final ProcessorContext context;
     private JsonObject ownerDataToPropogateToCopies;
     private AJEntityResource updateRes;
+    private AJEntityResource fetchDBResourceData;
 
     public UpdateResourceHandler(ProcessorContext context) {
         this.context = context;
@@ -91,23 +93,30 @@ class UpdateResourceHandler implements DBHandler {
     @Override
     public ExecutionResult<MessageResponse> validateRequest() {
         // fetch resource from DB based on Id received
-        AJEntityResource fetchDBResourceData = DBHelper.getResourceById(context.resourceId());
-        if (fetchDBResourceData == null) {
+        this.fetchDBResourceData = DBHelper.getResourceById(context.resourceId());
+        if (this.fetchDBResourceData == null) {
             LOGGER.error(
                 "validateRequest : updateResource : Object to update is not found in DB! Input resource ID: {} ",
                 context.resourceId());
             return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
-        String creator = fetchDBResourceData.getString(AJEntityResource.CREATOR_ID);
-        LOGGER.debug("validateRequest : updateResource : creator from DB = {}.", creator);
+        
+        if (!validate()) {
+            return new ExecutionResult<>(
+                MessageResponseFactory.createInternalErrorResponse("Data validation failed at DB"),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
 
-        if ((creator != null) && !creator.isEmpty()) {
-            isOwner = creator.equalsIgnoreCase(context.userId());
+        if (!authorized()) {
+            // Update is forbidden
+            return new ExecutionResult<>(
+                MessageResponseFactory.createForbiddenResponse("Need to be owner/collaborator on course/collection"),
+                ExecutionResult.ExecutionStatus.FAILED);
         }
         LOGGER.debug("validateRequest : updateResource : Ok! So, who is trying to update content? {}.",
             (isOwner) ? "owner" : "someone else");
-
+        
         String mapValue;
 
         // now mandatory field checks on input resource data and if contains
@@ -115,7 +124,6 @@ class UpdateResourceHandler implements DBHandler {
         // compare input value and collect only changed attributes in new model
         // that we will use to update
         this.updateRes = new AJEntityResource();
-
         DBHelper.setPGObject(this.updateRes, AJEntityResource.RESOURCE_ID, AJEntityResource.UUID_TYPE,
             context.resourceId());
         if (this.updateRes.hasErrors()) {
@@ -146,32 +154,23 @@ class UpdateResourceHandler implements DBHandler {
                 JsonObject resourceIdWithURLDuplicates =
                     DBHelper.getDuplicateResourcesByURL(entry.getValue().toString());
                 if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
-                    LOGGER.error(
-                        "validateRequest : Duplicate resource URL found. So cannot go ahead with creating new resource! URL : {}",
-                        entry.getKey());
-                    LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates);
+                    LOGGER.error("validateRequest : Duplicate resources found: {}", resourceIdWithURLDuplicates);
                     return new ExecutionResult<>(
                         MessageResponseFactory.createValidationErrorResponse(resourceIdWithURLDuplicates),
                         ExecutionResult.ExecutionStatus.FAILED);
                 }
-
             }
 
             // mandatory and owner specific items may be overlapping...so do a
             // separate check not as ELSE condition
-            if (!isOwner && AJEntityResource.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
-                // LOGGER.debug("validateRequest updateResource : Not owner but
-                // changing
-                // owner specific fields?");
-                LOGGER.error("Error updating resource. Field: {} : can be updated only by owner of the resource.",
+            if (!isOwner && !AJEntityResource.COPY_UPDATE_FIELDS.contains(entry.getKey())) {
+                LOGGER.error("Error updating resource. Field: {} : can not be allowed to update for resource copy.",
                     entry.getKey());
                 return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(),
                     ExecutionResult.ExecutionStatus.FAILED);
             } else if (isOwner && AJEntityResource.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
                 // collect the DB fields to update for owner specific fields
-                // across
-                // all
-                // copies of this resource
+                // across all copies of this resource
                 LOGGER.debug("updateResource : need to propagate this : {} : to other resources. ", entry.getKey());
                 if (ownerDataToPropogateToCopies == null) {
                     ownerDataToPropogateToCopies = new JsonObject();
@@ -222,13 +221,8 @@ class UpdateResourceHandler implements DBHandler {
                 }
             } else {
                 this.updateRes.set(entry.getKey(), entry.getValue()); // intentionally
-                // kept
-                // entry.getValue
-                // instead of
-                // mapValue as it
-                // needs to handle
-                // other datatypes
-                // like boolean
+                // kept entry.getValue instead of mapValue as it needs to handle
+                // other datatypes like boolean
             }
         }
         
@@ -236,7 +230,7 @@ class UpdateResourceHandler implements DBHandler {
         if (licenseFromRequest != null && !DBHelper.isValidLicense(licenseFromRequest)) {
             this.updateRes.setInteger(AJEntityResource.LICENSE, DBHelper.getDafaultLicense());
         }
-
+        
         LOGGER.debug(" \n **** Model to save: {}", this.updateRes);
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
     }
@@ -244,8 +238,6 @@ class UpdateResourceHandler implements DBHandler {
     @Override
     public ExecutionResult<MessageResponse> executeRequest() {
         if (this.updateRes == null) {
-            LOGGER.debug(
-                "executeRequest : We should not end up here...but if we do it is because this object is not updated in validateRequest.");
             LOGGER.error(
                 "executeRequest : updateResource : Object to update is not found or NULL! Input resource ID: {} ",
                 context.resourceId());
@@ -285,5 +277,62 @@ class UpdateResourceHandler implements DBHandler {
     @Override
     public boolean handlerReadOnly() {
         return false;
+    }
+    
+    private boolean authorized() {
+        String creator = this.fetchDBResourceData.getString(AJEntityResource.CREATOR_ID);
+        String course = this.fetchDBResourceData.getString(AJEntityResource.COURSE_ID);
+        String collection = this.fetchDBResourceData.getString(AJEntityResource.COLLECTION_ID);
+        String originalContentId = this.fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CONTENT_ID);
+        String originalCreatorId = this.fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CREATOR_ID);
+
+        if (creator != null && creator.equalsIgnoreCase(context.userId()) && originalContentId == null
+            && originalCreatorId == null && collection == null && course == null) {
+            // Since the creator is modifying, and it is not part of any
+            // collection or course, then owner should be able to modify
+            this.isOwner = true;
+            return true;
+        } else if (course != null) {
+            // Check if user is one of collaborator on course, we do not
+            // need to check the owner as course owner should be resource
+            // creator
+            long authRecordCount = Base.count(AJEntityResource.TABLE_COURSE, AJEntityResource.AUTH_VIA_COURSE_FILTER,
+                course, context.userId(), context.userId());
+            if (authRecordCount >= 1) {
+                // Auth check successful
+                LOGGER.debug("Auth check successful based on course: {}", course);
+                return true;
+            }
+        } else if (collection != null) {
+            // Check if the user is one of collaborator on collection, we do
+            // not need to check about course now
+            long authRecordCount = Base.count(AJEntityResource.TABLE_COLLECTION,
+                AJEntityResource.AUTH_VIA_COLLECTION_FILTER, collection, context.userId(), context.userId());
+            if (authRecordCount >= 1) {
+                LOGGER.debug("Auth check successful based on collection: {}", collection);
+                return true;
+            }
+        }
+
+        LOGGER.error("Auth check failed");
+        return false;
+    }
+    
+    private boolean validate() {
+        String course = this.fetchDBResourceData.getString(AJEntityResource.COURSE_ID);
+        String collection = this.fetchDBResourceData.getString(AJEntityResource.COLLECTION_ID);
+        String originalContentId = this.fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CONTENT_ID);
+        String originalCreatorId = this.fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CREATOR_ID);
+
+        if ((originalContentId != null || originalCreatorId != null) && collection == null && course == null) {
+            LOGGER.error("ACTIONABLE: collection/course is null, but one of original * id NOT null");
+            return false;
+        } else if (originalContentId == null && originalCreatorId == null && (collection != null || course != null)) {
+            LOGGER.error("ACTIONABLE: original * id is null, but course/collection is NOT null");
+            return false;
+        }
+
+        LOGGER.debug("validation for original * and course/collection passed");
+        return true;
     }
 }

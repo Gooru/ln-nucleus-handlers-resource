@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbutils.LicenseUtil;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityMetadataReference;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.javalite.activejdbc.LazyList;
@@ -279,19 +280,12 @@ final class DBHelper {
     }
 
     static Integer getDafaultLicense() {
-        AJEntityMetadataReference metadataReference = AJEntityMetadataReference.findFirst(
-            AJEntityMetadataReference.SELECT_LICENSE, AJEntityMetadataReference.DEFAULT_LICENSE_LABEL);
-        if (metadataReference != null) {
-            return metadataReference.getInteger(AJEntityMetadataReference.ID);
-        }
-
-        return null;
+        return LicenseUtil.getDefaultLicenseCode();
     }
 
     static boolean isValidLicense(int licenseId) {
         Long count = AJEntityMetadataReference.count(AJEntityMetadataReference.VALIDATE_LICENSE, licenseId);
         return count == 1;
-
     }
 
 }
