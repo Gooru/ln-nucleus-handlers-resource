@@ -102,6 +102,12 @@ class UpdateResourceHandler implements DBHandler {
             return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
+        
+        if (!validate()) {
+            return new ExecutionResult<>(
+                MessageResponseFactory.createInternalErrorResponse("Data validation failed at DB"),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
 
         if (!authorized()) {
             // Update is forbidden
@@ -332,5 +338,23 @@ class UpdateResourceHandler implements DBHandler {
 
         LOGGER.error("Auth check failed");
         return false;
+    }
+    
+    private boolean validate() {
+        String course = this.fetchDBResourceData.getString(AJEntityResource.COURSE_ID);
+        String collection = this.fetchDBResourceData.getString(AJEntityResource.COLLECTION_ID);
+        String originalContentId = this.fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CONTENT_ID);
+        String originalCreatorId = this.fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CREATOR_ID);
+
+        if ((originalContentId != null || originalCreatorId != null) && collection == null && course == null) {
+            LOGGER.error("ACTIONABLE: collection/course is null, but one of original * id NOT null");
+            return false;
+        } else if (originalContentId == null && originalCreatorId == null && (collection != null || course != null)) {
+            LOGGER.error("ACTIONABLE: original * id is null, but course/collection is NOT null");
+            return false;
+        }
+
+        LOGGER.debug("validation for original * and course/collection passed");
+        return true;
     }
 }
