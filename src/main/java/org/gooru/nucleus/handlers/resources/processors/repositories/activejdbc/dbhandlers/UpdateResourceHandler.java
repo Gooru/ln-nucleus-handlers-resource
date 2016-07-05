@@ -6,6 +6,7 @@ import java.util.StringJoiner;
 
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbutils.LicenseUtil;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
@@ -125,7 +126,8 @@ class UpdateResourceHandler implements DBHandler {
         // compare input value and collect only changed attributes in new model
         // that we will use to update
         this.updateRes = new AJEntityResource();
-
+        this.updateRes.setInteger(AJEntityResource.LICENSE, LicenseUtil.getDefaultLicenseCode());
+        
         DBHelper.setPGObject(this.updateRes, AJEntityResource.RESOURCE_ID, AJEntityResource.UUID_TYPE,
             context.resourceId());
         if (this.updateRes.hasErrors()) {
@@ -242,11 +244,6 @@ class UpdateResourceHandler implements DBHandler {
             }
         }
         
-        Integer licenseFromRequest = this.updateRes.getInteger(AJEntityResource.LICENSE);
-        if (licenseFromRequest != null && !DBHelper.isValidLicense(licenseFromRequest)) {
-            this.updateRes.setInteger(AJEntityResource.LICENSE, DBHelper.getDafaultLicense());
-        }
-
         LOGGER.debug(" \n **** Model to save: {}", this.updateRes);
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
     }

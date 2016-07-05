@@ -5,6 +5,7 @@ import java.util.StringJoiner;
 
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbutils.LicenseUtil;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
@@ -81,6 +82,7 @@ class CreateResourceHandler implements DBHandler {
         try {
 
             this.createRes = new AJEntityResource();
+            this.createRes.setInteger(AJEntityResource.LICENSE, LicenseUtil.getDefaultLicenseCode());
             DBHelper.populateEntityFromJson(context.request(), createRes);
             DBHelper.setPGObject(this.createRes, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE,
                 context.userId());
@@ -89,10 +91,6 @@ class CreateResourceHandler implements DBHandler {
             DBHelper.setPGObject(this.createRes, AJEntityResource.CONTENT_FORMAT, AJEntityResource.CONTENT_FORMAT_TYPE,
                 AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
 
-            Integer licenseFromRequest = this.createRes.getInteger(AJEntityResource.LICENSE);
-            if (licenseFromRequest == null || !DBHelper.isValidLicense(licenseFromRequest)) {
-                this.createRes.setInteger(AJEntityResource.LICENSE, DBHelper.getDafaultLicense());
-            }
             LOGGER.debug("validateRequest : Creating resource From MAP  : {}", this.createRes.toInsert());
 
             JsonObject resourceIdWithURLDuplicates =
