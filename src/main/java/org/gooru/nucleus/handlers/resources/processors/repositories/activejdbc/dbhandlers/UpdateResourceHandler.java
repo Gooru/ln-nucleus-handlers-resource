@@ -6,13 +6,12 @@ import java.util.StringJoiner;
 
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbutils.LicenseUtil;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
-import org.javalite.activejdbc.Base;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
+import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -125,8 +124,6 @@ class UpdateResourceHandler implements DBHandler {
         // compare input value and collect only changed attributes in new model
         // that we will use to update
         this.updateRes = new AJEntityResource();
-        this.updateRes.setInteger(AJEntityResource.LICENSE, LicenseUtil.getDefaultLicenseCode());
-        
         DBHelper.setPGObject(this.updateRes, AJEntityResource.RESOURCE_ID, AJEntityResource.UUID_TYPE,
             context.resourceId());
         if (this.updateRes.hasErrors()) {
@@ -157,32 +154,23 @@ class UpdateResourceHandler implements DBHandler {
                 JsonObject resourceIdWithURLDuplicates =
                     DBHelper.getDuplicateResourcesByURL(entry.getValue().toString());
                 if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
-                    LOGGER.error(
-                        "validateRequest : Duplicate resource URL found. So cannot go ahead with creating new resource! URL : {}",
-                        entry.getKey());
-                    LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates);
+                    LOGGER.error("validateRequest : Duplicate resources found: {}", resourceIdWithURLDuplicates);
                     return new ExecutionResult<>(
                         MessageResponseFactory.createValidationErrorResponse(resourceIdWithURLDuplicates),
                         ExecutionResult.ExecutionStatus.FAILED);
                 }
-
             }
 
             // mandatory and owner specific items may be overlapping...so do a
             // separate check not as ELSE condition
             if (!isOwner && !AJEntityResource.COPY_UPDATE_FIELDS.contains(entry.getKey())) {
-                // LOGGER.debug("validateRequest updateResource : Not owner but
-                // changing
-                // owner specific fields?");
                 LOGGER.error("Error updating resource. Field: {} : can not be allowed to update for resource copy.",
                     entry.getKey());
                 return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(),
                     ExecutionResult.ExecutionStatus.FAILED);
             } else if (isOwner && AJEntityResource.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
                 // collect the DB fields to update for owner specific fields
-                // across
-                // all
-                // copies of this resource
+                // across all copies of this resource
                 LOGGER.debug("updateResource : need to propagate this : {} : to other resources. ", entry.getKey());
                 if (ownerDataToPropogateToCopies == null) {
                     ownerDataToPropogateToCopies = new JsonObject();
@@ -233,14 +221,14 @@ class UpdateResourceHandler implements DBHandler {
                 }
             } else {
                 this.updateRes.set(entry.getKey(), entry.getValue()); // intentionally
-                // kept
-                // entry.getValue
-                // instead of
-                // mapValue as it
-                // needs to handle
-                // other datatypes
-                // like boolean
+                // kept entry.getValue instead of mapValue as it needs to handle
+                // other datatypes like boolean
             }
+        }
+        
+        Integer licenseFromRequest = this.updateRes.getInteger(AJEntityResource.LICENSE);
+        if (licenseFromRequest != null && !DBHelper.isValidLicense(licenseFromRequest)) {
+            this.updateRes.setInteger(AJEntityResource.LICENSE, DBHelper.getDafaultLicense());
         }
         
         LOGGER.debug(" \n **** Model to save: {}", this.updateRes);
@@ -250,8 +238,6 @@ class UpdateResourceHandler implements DBHandler {
     @Override
     public ExecutionResult<MessageResponse> executeRequest() {
         if (this.updateRes == null) {
-            LOGGER.debug(
-                "executeRequest : We should not end up here...but if we do it is because this object is not updated in validateRequest.");
             LOGGER.error(
                 "executeRequest : updateResource : Object to update is not found or NULL! Input resource ID: {} ",
                 context.resourceId());
@@ -306,14 +292,6 @@ class UpdateResourceHandler implements DBHandler {
             // collection or course, then owner should be able to modify
             this.isOwner = true;
             return true;
-        } else if (creator != null && creator.equalsIgnoreCase(context.userId()) && (originalContentId != null
-            || originalCreatorId != null) && collection == null && course == null) {
-            LOGGER.error("ACTIONABLE: collection/course is null, but one of original content or creator id NOT null");
-            return false;
-        } else if (creator != null && creator.equalsIgnoreCase(context.userId()) && originalContentId == null
-            && originalCreatorId == null && (collection != null || course != null)) {
-            LOGGER.error("ACTIONABLE: original * id is null, but course/collection is NOT null");
-            return false;
         } else if (course != null) {
             // Check if user is one of collaborator on course, we do not
             // need to check the owner as course owner should be resource
