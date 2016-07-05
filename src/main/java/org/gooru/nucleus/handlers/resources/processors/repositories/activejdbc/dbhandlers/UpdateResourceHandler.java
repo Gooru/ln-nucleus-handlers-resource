@@ -21,7 +21,7 @@ import io.vertx.core.json.JsonObject;
 class UpdateResourceHandler implements DBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(UpdateResourceHandler.class);
-    private static boolean isOwner = false;
+    private boolean isOwner = false;
     private final ProcessorContext context;
     private JsonObject ownerDataToPropogateToCopies;
     private AJEntityResource updateRes;
@@ -102,15 +102,6 @@ class UpdateResourceHandler implements DBHandler {
             return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
-        String creator = this.fetchDBResourceData.getString(AJEntityResource.CREATOR_ID);
-        String originalCreator = this.fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CREATOR_ID);
-        LOGGER.debug("validateRequest : updateResource : creator from DB = {}.", creator);
-
-        if (originalCreator == null && creator != null && !creator.isEmpty()) {
-            isOwner = creator.equalsIgnoreCase(context.userId());
-        }
-        LOGGER.debug("validateRequest : updateResource : Ok! So, who is trying to update content? {}.",
-            (isOwner) ? "owner" : "someone else");
 
         if (!authorized()) {
             // Update is forbidden
@@ -118,6 +109,8 @@ class UpdateResourceHandler implements DBHandler {
                 MessageResponseFactory.createForbiddenResponse("Need to be owner/collaborator on course/collection"),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
+        LOGGER.debug("validateRequest : updateResource : Ok! So, who is trying to update content? {}.",
+            (isOwner) ? "owner" : "someone else");
         
         String mapValue;
 
@@ -298,38 +291,46 @@ class UpdateResourceHandler implements DBHandler {
         String creator = this.fetchDBResourceData.getString(AJEntityResource.CREATOR_ID);
         String course = this.fetchDBResourceData.getString(AJEntityResource.COURSE_ID);
         String collection = this.fetchDBResourceData.getString(AJEntityResource.COLLECTION_ID);
-        if (creator != null && creator.equalsIgnoreCase(context.userId()) && course == null && collection == null) {
+        String originalContentId = this.fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CONTENT_ID);
+        String originalCreatorId = this.fetchDBResourceData.getString(AJEntityResource.ORIGINAL_CREATOR_ID);
+
+        if (creator != null && creator.equalsIgnoreCase(context.userId()) && originalContentId == null
+            && originalCreatorId == null && collection == null && course == null) {
             // Since the creator is modifying, and it is not part of any
             // collection or course, then owner should be able to modify
+            this.isOwner = true;
             return true;
-        } else {
-            // The ownership and rights flows from either collection or course
-            long authRecordCount;
-            if (course != null) {
-                // Check if user is one of collaborator on course, we do not
-                // need to check the owner as course owner should be resource
-                // creator
-                authRecordCount =
-                    Base.count(AJEntityResource.TABLE_COURSE, AJEntityResource.AUTH_VIA_COURSE_FILTER, course,
-                        context.userId(), context.userId());
-                if (authRecordCount >= 1) {
-                    // Auth check successful
-                    LOGGER.debug("Auth check successful based on course: {}", course);
-                    return true;
-                }
-            } else if (collection != null) {
-                // Check if the user is one of collaborator on collection, we do
-                // not need to check about course now
-                authRecordCount =
-                    Base.count(AJEntityResource.TABLE_COLLECTION, AJEntityResource.AUTH_VIA_COLLECTION_FILTER,
-                        collection, context.userId(), context.userId());
-                if (authRecordCount >= 1) {
-                    LOGGER.debug("Auth check successful based on collection: {}", collection);
-                    return true;
-                }
+        } else if (creator != null && creator.equalsIgnoreCase(context.userId()) && (originalContentId != null
+            || originalCreatorId != null) && collection == null && course == null) {
+            LOGGER.error("ACTIONABLE: collection/course is null, but one of original content or creator id NOT null");
+            return false;
+        } else if (creator != null && creator.equalsIgnoreCase(context.userId()) && originalContentId == null
+            && originalCreatorId == null && (collection != null || course != null)) {
+            LOGGER.error("ACTIONABLE: original * id is null, but course/collection is NOT null");
+            return false;
+        } else if (course != null) {
+            // Check if user is one of collaborator on course, we do not
+            // need to check the owner as course owner should be resource
+            // creator
+            long authRecordCount = Base.count(AJEntityResource.TABLE_COURSE, AJEntityResource.AUTH_VIA_COURSE_FILTER,
+                course, context.userId(), context.userId());
+            if (authRecordCount >= 1) {
+                // Auth check successful
+                LOGGER.debug("Auth check successful based on course: {}", course);
+                return true;
+            }
+        } else if (collection != null) {
+            // Check if the user is one of collaborator on collection, we do
+            // not need to check about course now
+            long authRecordCount = Base.count(AJEntityResource.TABLE_COLLECTION,
+                AJEntityResource.AUTH_VIA_COLLECTION_FILTER, collection, context.userId(), context.userId());
+            if (authRecordCount >= 1) {
+                LOGGER.debug("Auth check successful based on collection: {}", collection);
+                return true;
             }
         }
 
+        LOGGER.error("Auth check failed");
         return false;
     }
 }
