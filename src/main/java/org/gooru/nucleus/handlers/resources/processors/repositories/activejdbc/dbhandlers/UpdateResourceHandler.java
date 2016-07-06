@@ -126,13 +126,12 @@ class UpdateResourceHandler implements DBHandler {
         this.updateRes = new AJEntityResource();
         DBHelper.setPGObject(this.updateRes, AJEntityResource.RESOURCE_ID, AJEntityResource.UUID_TYPE,
             context.resourceId());
-        if (this.updateRes.hasErrors()) {
-            return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
-                ExecutionResult.ExecutionStatus.FAILED);
-        }
 
         LOGGER.debug("validateRequest updateResource : Iterate through the input Json now.");
-
+        
+        JsonObject validationErrors = new JsonObject();
+        JsonObject forbiddenErrors = new JsonObject();
+        
         for (Map.Entry<String, Object> entry : context.request()) {
             LOGGER.debug("validateRequest updateResource : checking the key & values..before collection. Key: {}",
                 entry.getKey());
@@ -140,13 +139,8 @@ class UpdateResourceHandler implements DBHandler {
             mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
             if (AJEntityResource.NOTNULL_FIELDS.contains(entry.getKey())) {
                 if (mapValue == null) {
-                    LOGGER.error(
-                        "validateRequest Failed to update resource. Field : {} : is mandatory field and cannot be null.",
-                        entry.getKey());
-                    return new ExecutionResult<>(
-                        MessageResponseFactory
-                            .createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())),
-                        ExecutionResult.ExecutionStatus.FAILED);
+                    LOGGER.error("Field : {} : is mandatory field and cannot be null.", entry.getKey());
+                    validationErrors.put(entry.getKey(), MessageConstants.FIELD_NOT_NULL);
                 }
             }
 
@@ -166,8 +160,7 @@ class UpdateResourceHandler implements DBHandler {
             if (!isOwner && !AJEntityResource.COPY_UPDATE_FIELDS.contains(entry.getKey())) {
                 LOGGER.error("Error updating resource. Field: {} : can not be allowed to update for resource copy.",
                     entry.getKey());
-                return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(),
-                    ExecutionResult.ExecutionStatus.FAILED);
+                forbiddenErrors.put(entry.getKey(), MessageConstants.FIELD_NOT_ALLOWED);
             } else if (isOwner && AJEntityResource.OWNER_SPECIFIC_FIELDS.contains(entry.getKey())) {
                 // collect the DB fields to update for owner specific fields
                 // across all copies of this resource
@@ -183,42 +176,21 @@ class UpdateResourceHandler implements DBHandler {
             if (AJEntityResource.CONTENT_FORMAT.equalsIgnoreCase(entry.getKey())) {
                 if (!AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE.equalsIgnoreCase(mapValue)) {
                     LOGGER.error("updateResource : content format is invalid! : {} ", entry.getKey());
-                    return new ExecutionResult<>(
-                        MessageResponseFactory
-                            .createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())),
-                        ExecutionResult.ExecutionStatus.FAILED);
+                    validationErrors.put(entry.getKey(), MessageConstants.INVALID_VALUE);
                 }
             } else if (AJEntityResource.CONTENT_SUBFORMAT.equalsIgnoreCase(entry.getKey())) {
                 if (mapValue == null || mapValue.isEmpty()
                     || !mapValue.endsWith(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE)) {
                     LOGGER.error("updateResource : content subformat is invalid! : {} ", entry.getKey());
-                    return new ExecutionResult<>(
-                        MessageResponseFactory
-                            .createValidationErrorResponse(new JsonObject().put(entry.getKey(), entry.getValue())),
-                        ExecutionResult.ExecutionStatus.FAILED);
+                    validationErrors.put(entry.getKey(), MessageConstants.INVALID_VALUE);
                 } else {
                     DBHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.CONTENT_SUBFORMAT_TYPE,
                         mapValue);
-                    if (this.updateRes.hasErrors()) {
-                        return new ExecutionResult<>(
-                            MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
-                            ExecutionResult.ExecutionStatus.FAILED);
-                    }
                 }
             } else if (AJEntityResource.JSONB_FIELDS.contains(entry.getKey())) {
                 DBHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.JSONB_FORMAT, mapValue);
-                if (this.updateRes.hasErrors()) {
-                    return new ExecutionResult<>(
-                        MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
-                        ExecutionResult.ExecutionStatus.FAILED);
-                }
             } else if (AJEntityResource.UUID_FIELDS.contains(entry.getKey())) {
                 DBHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.UUID_TYPE, mapValue);
-                if (this.updateRes.hasErrors()) {
-                    return new ExecutionResult<>(
-                        MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
-                        ExecutionResult.ExecutionStatus.FAILED);
-                }
             } else {
                 this.updateRes.set(entry.getKey(), entry.getValue()); // intentionally
                 // kept entry.getValue instead of mapValue as it needs to handle
@@ -230,6 +202,24 @@ class UpdateResourceHandler implements DBHandler {
         if (licenseFromRequest != null && !DBHelper.isValidLicense(licenseFromRequest)) {
             this.updateRes.setInteger(AJEntityResource.LICENSE, DBHelper.getDafaultLicense());
         }
+        
+        if (!validationErrors.isEmpty()) {
+            return new ExecutionResult<>(
+                MessageResponseFactory.createValidationErrorResponse(validationErrors),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
+        
+        if (!forbiddenErrors.isEmpty()) {
+            return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(forbiddenErrors),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
+        
+        if (this.updateRes.hasErrors()) {
+            return new ExecutionResult<>(
+                MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
+        
         
         LOGGER.debug(" \n **** Model to save: {}", this.updateRes);
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
