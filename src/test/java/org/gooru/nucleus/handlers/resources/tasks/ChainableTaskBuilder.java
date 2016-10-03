@@ -39,4 +39,34 @@ public final class ChainableTaskBuilder {
         ChainableTaskExecutor executor, JsonObject input, ResponseBuilder.Response output) {
         return new DepedencySatisfierNoOpTask(name, eventBus, context, executor, input, output);
     }
+
+    public static ChainableTask buildCreateResourceAnonymousTask(String name, EventBus eventBus, TestContext context,
+        ChainableTaskExecutor executor) {
+        return new CreateResourceAnonymousTask(name, eventBus, context, executor);
+    }
+
+    public static ChainableTask buildFetchResourceNonExistingTask(String name, EventBus eventBus, TestContext context,
+        ChainableTaskExecutor executor) {
+        return new FetchResourceNonExistingTask(name, eventBus, context, executor);
+    }
+
+    public static ChainableTask buildUpdateResourceAnonymousTask(String name, EventBus eventBus, TestContext context,
+        ChainableTaskExecutor executor) {
+        return new UpdateResourceAnonymousTask(name, eventBus, context, executor);
+    }
+
+    public static ChainableTask buildUpdateResourceUnauthorizedTask(String name, EventBus eventBus, TestContext context,
+        ChainableTaskExecutor executor) {
+        return new UpdateResourceUnauthorizedTask(name, eventBus, context, executor);
+    }
+
+    public static ChainableTask buildDeleteResourceAnonymousTask(String name, EventBus eventBus, TestContext context,
+        ChainableTaskExecutor executor) {
+        return new DeleteResourceAnonymousTask(name, eventBus, context, executor);
+    }
+
+    public static ChainableTask buildDeleteResourceUnauthorizedTask(String name, EventBus eventBus, TestContext context,
+        ChainableTaskExecutor executor) {
+        return new DeleteResourceUnauthorizedTask(name, eventBus, context, executor);
+    }
 }

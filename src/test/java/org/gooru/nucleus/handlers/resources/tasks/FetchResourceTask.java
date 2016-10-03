@@ -21,9 +21,9 @@ final class FetchResourceTask extends AbstractChainableTaskWithEventBusResponseH
     @Override
     public void execute(TestContext context, EventBus eventBus, ChainableTaskExecutor executor) {
         final String resourceId = provider.resourceId();
-        EventBusChainableSender
-            .sendMessage(context, eventBus, RequestBuilder.buildEmptyRequest(), MessagebusEndpoints.MBEP_RESOURCE,
-                DeliveryOptionsBuilder.buildDeliveryOptionsForFetchResource(resourceId), this, executor);
+        EventBusChainableSender.sendMessage(context, eventBus, RequestBuilder.buildEmptyDefaultRequest(),
+            MessagebusEndpoints.MBEP_RESOURCE, DeliveryOptionsBuilder.buildDeliveryOptionsForFetchResource(resourceId),
+            this, executor);
     }
 
     @Override

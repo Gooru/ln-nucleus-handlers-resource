@@ -11,17 +11,19 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.ext.unit.TestContext;
 
 /**
- * @author ashish on 30/9/16.
+ * @author ashish on 3/10/16.
  */
-final class DeleteResourceTask extends AbstractChainableTaskWithEventBusResponseHandler {
-    public DeleteResourceTask(String name, EventBus eventBus, TestContext context, ChainableTaskExecutor executor) {
+public class DeleteResourceUnauthorizedTask extends AbstractChainableTaskWithEventBusResponseHandler {
+    public DeleteResourceUnauthorizedTask(String name, EventBus eventBus, TestContext context,
+        ChainableTaskExecutor executor) {
         super(name, eventBus, context, executor);
     }
 
     @Override
     public void execute(TestContext context, EventBus eventBus, ChainableTaskExecutor executor) {
+        System.out.println("Testing delete resource for unauthorized user");
         final String resourceId = provider.resourceId();
-        EventBusChainableSender.sendMessage(context, eventBus, RequestBuilder.buildEmptyDefaultRequest(),
+        EventBusChainableSender.sendMessage(context, eventBus, RequestBuilder.buildEmptyUnauthorizedRequest(),
             MessagebusEndpoints.MBEP_RESOURCE, DeliveryOptionsBuilder.buildDeliveryOptionsForDeleteResource(resourceId),
             this, executor);
 
@@ -31,6 +33,6 @@ final class DeleteResourceTask extends AbstractChainableTaskWithEventBusResponse
     protected void doAssertions(TestContext context, ResponseBuilder.Response response,
         ChainableTaskExecutor executor) {
 
-        context.assertEquals(HttpConstants.HttpStatus.NO_CONTENT.getCode(), response.httpStatus());
+        context.assertEquals(HttpConstants.HttpStatus.FORBIDDEN.getCode(), response.httpStatus());
     }
 }

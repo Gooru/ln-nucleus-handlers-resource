@@ -11,6 +11,7 @@ public final class TestConstants {
     public static final String EMAIL = "email";
     public static final String EMAIL_DEFAULT_VALUE = "user@example.org";
     public static final String USER_ID_DEFAULT_VALUE = UUID.randomUUID().toString();
+    public static final String ANONYMOUS = "anonymous";
 
     private TestConstants() {
         throw new AssertionError();

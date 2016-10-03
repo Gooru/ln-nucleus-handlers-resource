@@ -19,7 +19,7 @@ public class NonExistingDeleteScenario implements Scenario {
     public void playScenario(TestContext context, EventBus eventBus) {
         Async async = context.async();
         System.out.println("Testing delete resource");
-        eventBus.send(MessagebusEndpoints.MBEP_RESOURCE, RequestBuilder.buildEmptyRequest(),
+        eventBus.send(MessagebusEndpoints.MBEP_RESOURCE, RequestBuilder.buildEmptyDefaultRequest(),
             DeliveryOptionsBuilder.buildDeliveryOptionsForDeleteResource(), reply -> {
                 if (reply.succeeded()) {
                     System.out.println(reply.result().body());
