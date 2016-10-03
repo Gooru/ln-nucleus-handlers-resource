@@ -27,7 +27,6 @@ public class ResourceVerticleTest {
     private static EventBus eventBus;
 
     private final NonExistingDeleteScenario nonExistingDeleteScenario = new NonExistingDeleteScenario();
-    private final CreateScenario createScenario = new CreateScenario();
     private final ResourceCreateScenario resourceCreateScenario = new ResourceCreateScenario();
     private final ResourceDeleteScenario resourceDeleteScenario = new ResourceDeleteScenario();
     private final ResourceUpdateScenario resourceUpdateScenario = new ResourceUpdateScenario();
