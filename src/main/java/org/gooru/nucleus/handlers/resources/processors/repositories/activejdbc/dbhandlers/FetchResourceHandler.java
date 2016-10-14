@@ -22,24 +22,11 @@ class FetchResourceHandler implements DBHandler {
 
     @Override
     public ExecutionResult<MessageResponse> checkSanity() {
-        if (context.resourceId() == null) {
-            LOGGER.error("checkSanity() failed. ResourceID is null!");
-            return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(),
-                ExecutionResult.ExecutionStatus.FAILED);
-        } else if (context.resourceId().isEmpty()) {
-            LOGGER.error("checkSanity() failed. ResourceID is empty!");
-            return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
-                ExecutionResult.ExecutionStatus.FAILED);
+        ExecutionResult<MessageResponse> result = SanityCheckerHelper.verifyResourceId(context);
+        if (result.hasFailed()) {
+            return result;
         }
-
-        // we need some valid user -- anonymous will also do
-        if (context.userId() == null || context.userId().isEmpty()) {
-            return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse("Invalid user context"),
-                ExecutionResult.ExecutionStatus.FAILED);
-        }
-
-        LOGGER.debug("checkSanity() passed");
-        return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+        return SanityCheckerHelper.verifyUserAllowAnonymous(context);
     }
 
     @Override
@@ -52,10 +39,9 @@ class FetchResourceHandler implements DBHandler {
         AJEntityResource result = DBHelper.getResourceById(context.resourceId());
 
         if (result != null) {
-            return new ExecutionResult<>(
-                MessageResponseFactory.createGetSuccessResponse(new JsonObject(JsonFormatterBuilder
-                    .buildSimpleJsonFormatter(false, AJEntityResource.RESOURCE_SPECIFIC_FIELDS).toJson(result))),
-                ExecutionResult.ExecutionStatus.SUCCESSFUL);
+            return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(new JsonObject(
+                JsonFormatterBuilder.buildSimpleJsonFormatter(false, AJEntityResource.RESOURCE_SPECIFIC_FIELDS)
+                    .toJson(result))), ExecutionResult.ExecutionStatus.SUCCESSFUL);
 
         }
 

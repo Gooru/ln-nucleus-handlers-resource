@@ -1,6 +1,5 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
-import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
@@ -24,25 +23,11 @@ class DeleteResourceHandler implements DBHandler {
 
     @Override
     public ExecutionResult<MessageResponse> checkSanity() {
-        if (context.resourceId() == null) {
-            LOGGER.error("checkSanity() failed. ResourceID is null!");
-            return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(),
-                ExecutionResult.ExecutionStatus.FAILED);
-        } else if (context.resourceId().isEmpty()) {
-            LOGGER.error("checkSanity() failed. ResourceID is empty!");
-            return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
-                ExecutionResult.ExecutionStatus.FAILED);
+        ExecutionResult<MessageResponse> result = SanityCheckerHelper.verifyResourceId(context);
+        if (result.hasFailed()) {
+            return result;
         }
-
-        if (context.userId() == null || context.userId().isEmpty() || context.userId()
-            .equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
-            return new ExecutionResult<>(
-                MessageResponseFactory.createForbiddenResponse("Anonymous user denied this action"),
-                ExecutionResult.ExecutionStatus.FAILED);
-        }
-
-        LOGGER.debug("checkSanity() passed");
-        return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+        return SanityCheckerHelper.verifyUserExcludeAnonymous(context);
     }
 
     @Override
@@ -116,11 +101,13 @@ class DeleteResourceHandler implements DBHandler {
                     }
                 } else {
                     LOGGER.info("Resource '{}' deleted, no copies found", context.resourceId());
-                    return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(new JsonObject().put("id", context.resourceId())),
+                    return new ExecutionResult<>(MessageResponseFactory
+                        .createDeleteSuccessResponse(new JsonObject().put("id", context.resourceId())),
                         ExecutionResult.ExecutionStatus.SUCCESSFUL);
                 }
             } else {
-                return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(new JsonObject().put("id", context.resourceId())),
+                return new ExecutionResult<>(MessageResponseFactory
+                    .createDeleteSuccessResponse(new JsonObject().put("id", context.resourceId())),
                     ExecutionResult.ExecutionStatus.SUCCESSFUL);
             }
         } catch (IllegalArgumentException e) {
