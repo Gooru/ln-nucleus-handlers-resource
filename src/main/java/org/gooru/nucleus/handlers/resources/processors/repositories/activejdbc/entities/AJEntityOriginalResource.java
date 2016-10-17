@@ -8,8 +8,8 @@ import org.javalite.activejdbc.annotations.Table;
  */
 @Table("original_resource")
 public class AJEntityOriginalResource extends Model {
-	
-	// Field names
+
+    // Field names
     public static final String RESOURCE_ID = "id";
     public static final String RESOURCE_TITLE = "title";
     public static final String RESOURCE_URL = "url";
@@ -54,4 +54,7 @@ public class AJEntityOriginalResource extends Model {
     public static final String VALID_CONTENT_FORMAT_FOR_RESOURCE = "resource";
     public static final String JSONB_FORMAT = "jsonb";
     public static final String UUID_TYPE = "uuid";
+
+    public static final String FETCH_RESOURCE_FOR_DELETE =
+        "select id, creator_id from original_resource where id = " + "?::uuid and is_deleted = false";
 }

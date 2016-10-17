@@ -93,7 +93,7 @@ public final class ResourceUpdateHelper {
                 params.add(ownerResourceId);
                 params.add(originalCreator);
                 numRecsUpdated = AJEntityResource
-                    .update(updateStmt, AJEntityResource.SQL_UPDATEOWNERDATATOCOPIES_WHERECLAUSE, params.toArray());
+                    .update(updateStmt, AJEntityResource.FILTER_FETCH_REFERENCES_OF_ORIGINAL, params.toArray());
                 LOGGER.debug("updateOwnerDataToCopies : Update successful. Number of records updated: {}",
                     numRecsUpdated);
             }

@@ -2,8 +2,15 @@ package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
+import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
+import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,26 +22,56 @@ public final class ResourceDeleteHelper {
         throw new AssertionError();
     }
 
-    public static int deleteResourceCopies(AJEntityResource resource, String originalResourceId)
-        throws IllegalArgumentException {
-        // update content set is_deleted=true where content_format='resource;
-        // and original_content_id=Argument and is_deleted=false
-        LOGGER.debug("deleteResourceCopies: originalResourceId {}", originalResourceId);
+    public static int deleteResourceReferences(AJEntityOriginalResource resource, String originalResourceId) {
+
+        Objects.requireNonNull(resource);
+        Objects.requireNonNull(originalResourceId);
+
         int numRecsUpdated;
         List<Object> params = new ArrayList<Object>();
+        String creatorId = resource.getString(AJEntityOriginalResource.CREATOR_ID);
         String updateStmt = AJEntityResource.IS_DELETED + "= ? ";
-        TypeHelper.setPGObject(resource, AJEntityResource.CONTENT_FORMAT, AJEntityResource.CONTENT_FORMAT_TYPE,
-            AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
         params.add(true);
-        params.add(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
         params.add(originalResourceId);
+        params.add(creatorId);
 
-        numRecsUpdated = AJEntityResource
-            .update(updateStmt, AJEntityResource.SQL_DELETERESOURCECOPIES_WHERECLAUSE, params.toArray());
-        LOGGER.debug(
-            "deleteResourceCopies : Update successful and is_deleted set to true for all copies of the resource {} . "
-                + "Number of records updated: {}", originalResourceId, numRecsUpdated);
+        numRecsUpdated =
+            AJEntityResource.update(updateStmt, AJEntityResource.FILTER_FETCH_REFERENCES_OF_ORIGINAL, params.toArray());
+        LOGGER.debug("Deleted '{}' references for resource id '{}'", numRecsUpdated, originalResourceId);
         return numRecsUpdated;
 
     }
+
+    public static ExecutionResult<MessageResponse> updateCollectionTimeStamp(AJEntityResource resource,
+        ProcessorContext context) {
+        Object collectionId = resource.get(AJEntityResource.COLLECTION_ID);
+        if (collectionId != null) {
+            int rows = Base.exec(AJEntityResource.UPDATE_CONTAINER_TIMESTAMP, collectionId);
+            if (rows != 1) {
+                LOGGER.warn("update of the collection timestamp failed for collection '{}' with resource '{}'",
+                    collectionId, context.resourceId());
+                return new ExecutionResult<>(
+                    MessageResponseFactory.createInternalErrorResponse("Interaction with store failed"),
+                    ExecutionResult.ExecutionStatus.FAILED);
+            }
+        }
+        return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+    }
+
+    public static ExecutionResult<MessageResponse> markResourceRefAsDeleted(AJEntityResource resource,
+        ProcessorContext context) {
+        TypeHelper.setPGObject(resource, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, context.userId());
+        if (resource.hasErrors()) {
+            return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resource.errors()),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
+
+        resource.set(AJEntityResource.IS_DELETED, true);
+        if (!resource.save()) {
+            return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resource.errors()),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
+        return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+    }
+
 }

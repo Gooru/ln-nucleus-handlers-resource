@@ -102,12 +102,11 @@ class CreateResourceHandler implements DBHandler {
             LOGGER.debug("validateRequest : Creating resource From MAP  : {}", this.createRes.toInsert());
 
             JsonObject resourceIdWithURLDuplicates = ResourceRetrieveHelper
-                .getDuplicateResourcesByURL(this.createRes.getString(AJEntityResource.RESOURCE_URL));
+                .getDuplicateResourcesByUrl(this.createRes.getString(AJEntityResource.RESOURCE_URL));
             if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
                 LOGGER.error(
                     "validateRequest : Duplicate resource URL found. So cannot go ahead with creating new resource! "
-                        + "URL : {}",
-                    createRes.getString(AJEntityResource.RESOURCE_URL));
+                        + "URL : {}", createRes.getString(AJEntityResource.RESOURCE_URL));
                 LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates);
                 return new ExecutionResult<>(
                     MessageResponseFactory.createValidationErrorResponse(resourceIdWithURLDuplicates),

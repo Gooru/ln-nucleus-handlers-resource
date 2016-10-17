@@ -1,4 +1,4 @@
-package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
+package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers;
 
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
@@ -8,7 +8,7 @@ import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-class SanityCheckerHelper {
+public class SanityCheckerHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SanityCheckerHelper.class);
 

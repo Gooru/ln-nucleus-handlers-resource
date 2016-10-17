@@ -151,7 +151,7 @@ class UpdateResourceHandler implements DBHandler {
 
             if (AJEntityResource.RESOURCE_URL.equalsIgnoreCase(entry.getKey())) {
                 JsonObject resourceIdWithURLDuplicates =
-                    ResourceRetrieveHelper.getDuplicateResourcesByURL(entry.getValue().toString());
+                    ResourceRetrieveHelper.getDuplicateResourcesByUrl(entry.getValue().toString());
                 if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
                     LOGGER.error("validateRequest : Duplicate resources found: {}", resourceIdWithURLDuplicates);
                     return new ExecutionResult<>(

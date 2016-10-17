@@ -2,7 +2,7 @@ package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.
 
 import java.sql.SQLException;
 
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.javalite.activejdbc.Model;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,15 +15,15 @@ public final class TypeHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TypeHelper.class);
 
-    public static void setPGObject(AJEntityResource resource, String field, String type, String value) {
+    public static void setPGObject(Model model, String field, String type, String value) {
         PGobject pgObject = new PGobject();
         pgObject.setType(type);
         try {
             pgObject.setValue(value);
-            resource.set(field, pgObject);
+            model.set(field, pgObject);
         } catch (SQLException e) {
             LOGGER.error("Not able to set value for field: {}, type: {}, value: {}", field, type, value);
-            resource.errors().put(field, value);
+            model.errors().put(field, value);
         }
     }
 }
