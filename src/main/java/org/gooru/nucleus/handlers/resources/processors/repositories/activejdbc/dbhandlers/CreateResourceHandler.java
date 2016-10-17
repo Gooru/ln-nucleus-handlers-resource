@@ -5,6 +5,11 @@ import java.util.StringJoiner;
 
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.DBHelper;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.LicenseHelper;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers
+    .ResourceRetrieveHelper;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.TypeHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
@@ -34,8 +39,8 @@ class CreateResourceHandler implements DBHandler {
                 ExecutionStatus.FAILED);
         }
 
-        if (context.userId() == null || context.userId().isEmpty()
-            || context.userId().equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
+        if (context.userId() == null || context.userId().isEmpty() || context.userId()
+            .equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
             return new ExecutionResult<>(
                 MessageResponseFactory.createForbiddenResponse("Anonymous user denied this action"),
                 ExecutionResult.ExecutionStatus.FAILED);
@@ -60,16 +65,16 @@ class CreateResourceHandler implements DBHandler {
         // returning error back for all validation failed in one go
         if (!missingFields.toString().isEmpty()) {
             LOGGER.info("request data validation failed for '{}'", missingFields.toString());
-            return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(
-                "mandatory field(s) '" + missingFields.toString() + "' missing"), ExecutionStatus.FAILED);
+            return new ExecutionResult<>(MessageResponseFactory
+                .createInvalidRequestResponse("mandatory field(s) '" + missingFields.toString() + "' missing"),
+                ExecutionStatus.FAILED);
         }
 
         if (!resourceIrrelevantFields.toString().isEmpty()) {
             LOGGER.info("request data validation failed for '{}'", resourceIrrelevantFields.toString());
-            return new ExecutionResult<>(MessageResponseFactory
-                .createInvalidRequestResponse("Resource irrelevant fields are being sent in the request '"
-                    + resourceIrrelevantFields.toString() + '\''),
-                ExecutionStatus.FAILED);
+            return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(
+                "Resource irrelevant fields are being sent in the request '" + resourceIrrelevantFields.toString()
+                    + '\''), ExecutionStatus.FAILED);
         }
 
         LOGGER.debug("checkSanity() OK");
@@ -82,24 +87,26 @@ class CreateResourceHandler implements DBHandler {
 
             this.createRes = new AJEntityResource();
             DBHelper.populateEntityFromJson(context.request(), createRes);
-            DBHelper.setPGObject(this.createRes, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE,
+            TypeHelper.setPGObject(this.createRes, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE,
                 context.userId());
-            DBHelper.setPGObject(this.createRes, AJEntityResource.CREATOR_ID, AJEntityResource.UUID_TYPE,
-                context.userId());
-            DBHelper.setPGObject(this.createRes, AJEntityResource.CONTENT_FORMAT, AJEntityResource.CONTENT_FORMAT_TYPE,
-                AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
-            
+            TypeHelper
+                .setPGObject(this.createRes, AJEntityResource.CREATOR_ID, AJEntityResource.UUID_TYPE, context.userId());
+            TypeHelper
+                .setPGObject(this.createRes, AJEntityResource.CONTENT_FORMAT, AJEntityResource.CONTENT_FORMAT_TYPE,
+                    AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
+
             Integer licenseFromRequest = this.createRes.getInteger(AJEntityResource.LICENSE);
-            if (licenseFromRequest == null || !DBHelper.isValidLicense(licenseFromRequest)) {
-                this.createRes.setInteger(AJEntityResource.LICENSE, DBHelper.getDafaultLicense());
+            if (licenseFromRequest == null || !LicenseHelper.isValidLicense(licenseFromRequest)) {
+                this.createRes.setInteger(AJEntityResource.LICENSE, LicenseHelper.getDafaultLicense());
             }
             LOGGER.debug("validateRequest : Creating resource From MAP  : {}", this.createRes.toInsert());
 
-            JsonObject resourceIdWithURLDuplicates =
-                DBHelper.getDuplicateResourcesByURL(this.createRes.getString(AJEntityResource.RESOURCE_URL));
+            JsonObject resourceIdWithURLDuplicates = ResourceRetrieveHelper
+                .getDuplicateResourcesByURL(this.createRes.getString(AJEntityResource.RESOURCE_URL));
             if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
                 LOGGER.error(
-                    "validateRequest : Duplicate resource URL found. So cannot go ahead with creating new resource! URL : {}",
+                    "validateRequest : Duplicate resource URL found. So cannot go ahead with creating new resource! "
+                        + "URL : {}",
                     createRes.getString(AJEntityResource.RESOURCE_URL));
                 LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates);
                 return new ExecutionResult<>(
@@ -134,8 +141,9 @@ class CreateResourceHandler implements DBHandler {
 
         // successful...
         LOGGER.debug("executeRequest : Created resource ID: " + this.createRes.getString(AJEntityResource.RESOURCE_ID));
-        return new ExecutionResult<>(MessageResponseFactory.createPostSuccessResponse("Location",
-            this.createRes.getString(AJEntityResource.RESOURCE_ID)), ExecutionResult.ExecutionStatus.SUCCESSFUL);
+        return new ExecutionResult<>(MessageResponseFactory
+            .createPostSuccessResponse("Location", this.createRes.getString(AJEntityResource.RESOURCE_ID)),
+            ExecutionResult.ExecutionStatus.SUCCESSFUL);
     }
 
     @Override

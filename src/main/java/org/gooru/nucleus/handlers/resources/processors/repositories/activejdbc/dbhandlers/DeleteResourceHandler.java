@@ -1,6 +1,10 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.ResourceDeleteHelper;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers
+    .ResourceRetrieveHelper;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.TypeHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
@@ -33,7 +37,7 @@ class DeleteResourceHandler implements DBHandler {
     @Override
     public ExecutionResult<MessageResponse> validateRequest() {
 
-        this.resource = DBHelper.getResourceDetailUpForDeletion(context.resourceId());
+        this.resource = ResourceRetrieveHelper.getResourceDetailUpForDeletion(context.resourceId());
         if (this.resource == null) {
             LOGGER
                 .error("validateRequest : deleteResource : Object to update is not found in DB! Input resource ID: {} ",
@@ -56,7 +60,7 @@ class DeleteResourceHandler implements DBHandler {
     @Override
     public ExecutionResult<MessageResponse> executeRequest() {
         try {
-            DBHelper.setPGObject(this.resource, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE,
+            TypeHelper.setPGObject(this.resource, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE,
                 this.context.userId());
             if (this.resource.hasErrors()) {
                 return new ExecutionResult<>(
@@ -87,9 +91,11 @@ class DeleteResourceHandler implements DBHandler {
             if (creator != null && creator.equalsIgnoreCase(context.userId()) && (
                 this.resource.getString(AJEntityResource.ORIGINAL_CONTENT_ID) == null)) {
                 LOGGER.info("original resource marked as deleted successfully");
-                JsonObject resourceCopyIds = DBHelper.getCopiesOfAResource(this.resource, context.resourceId());
+                JsonObject resourceCopyIds =
+                    ResourceRetrieveHelper.getCopiesOfAResource(this.resource, context.resourceId());
                 if (resourceCopyIds != null && !resourceCopyIds.isEmpty()) {
-                    int deletedResourceCopies = DBHelper.deleteResourceCopies(this.resource, context.resourceId());
+                    int deletedResourceCopies =
+                        ResourceDeleteHelper.deleteResourceCopies(this.resource, context.resourceId());
                     if (deletedResourceCopies >= 0) {
                         return new ExecutionResult<>(
                             MessageResponseFactory.createDeleteSuccessResponse(resourceCopyIds),

@@ -6,6 +6,11 @@ import java.util.StringJoiner;
 
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.LicenseHelper;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers
+    .ResourceRetrieveHelper;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.ResourceUpdateHelper;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.TypeHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
@@ -38,8 +43,8 @@ class UpdateResourceHandler implements DBHandler {
                 ExecutionResult.ExecutionStatus.FAILED);
         }
 
-        if (context.userId() == null || context.userId().isEmpty()
-            || context.userId().equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
+        if (context.userId() == null || context.userId().isEmpty() || context.userId()
+            .equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)) {
             return new ExecutionResult<>(
                 MessageResponseFactory.createForbiddenResponse("Anonymous user denied this action"),
                 ExecutionResult.ExecutionStatus.FAILED);
@@ -74,16 +79,16 @@ class UpdateResourceHandler implements DBHandler {
         // returning error back for all validation failed in one go
         if (!missingFields.toString().isEmpty()) {
             LOGGER.info("request data validation failed for '{}'", missingFields.toString());
-            return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(
-                "mandatory field(s) '" + missingFields.toString() + "' missing"), ExecutionStatus.FAILED);
+            return new ExecutionResult<>(MessageResponseFactory
+                .createInvalidRequestResponse("mandatory field(s) '" + missingFields.toString() + "' missing"),
+                ExecutionStatus.FAILED);
         }
 
         if (!resourceIrrelevantFields.toString().isEmpty()) {
             LOGGER.info("request data validation failed for '{}'", resourceIrrelevantFields.toString());
-            return new ExecutionResult<>(MessageResponseFactory
-                .createInvalidRequestResponse("Resource irrelevant fields are being sent in the request '"
-                    + resourceIrrelevantFields.toString() + '\''),
-                ExecutionStatus.FAILED);
+            return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse(
+                "Resource irrelevant fields are being sent in the request '" + resourceIrrelevantFields.toString()
+                    + '\''), ExecutionStatus.FAILED);
         }
 
         LOGGER.debug("checkSanity() passed");
@@ -93,15 +98,15 @@ class UpdateResourceHandler implements DBHandler {
     @Override
     public ExecutionResult<MessageResponse> validateRequest() {
         // fetch resource from DB based on Id received
-        this.fetchDBResourceData = DBHelper.getResourceById(context.resourceId());
+        this.fetchDBResourceData = ResourceRetrieveHelper.getResourceById(context.resourceId());
         if (this.fetchDBResourceData == null) {
-            LOGGER.error(
-                "validateRequest : updateResource : Object to update is not found in DB! Input resource ID: {} ",
-                context.resourceId());
+            LOGGER
+                .error("validateRequest : updateResource : Object to update is not found in DB! Input resource ID: {} ",
+                    context.resourceId());
             return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
-        
+
         if (!validate()) {
             return new ExecutionResult<>(
                 MessageResponseFactory.createInternalErrorResponse("Data validation failed at DB"),
@@ -116,7 +121,7 @@ class UpdateResourceHandler implements DBHandler {
         }
         LOGGER.debug("validateRequest : updateResource : Ok! So, who is trying to update content? {}.",
             (isOwner) ? "owner" : "someone else");
-        
+
         String mapValue;
 
         // now mandatory field checks on input resource data and if contains
@@ -124,14 +129,14 @@ class UpdateResourceHandler implements DBHandler {
         // compare input value and collect only changed attributes in new model
         // that we will use to update
         this.updateRes = new AJEntityResource();
-        DBHelper.setPGObject(this.updateRes, AJEntityResource.RESOURCE_ID, AJEntityResource.UUID_TYPE,
+        TypeHelper.setPGObject(this.updateRes, AJEntityResource.RESOURCE_ID, AJEntityResource.UUID_TYPE,
             context.resourceId());
 
         LOGGER.debug("validateRequest updateResource : Iterate through the input Json now.");
-        
+
         JsonObject validationErrors = new JsonObject();
         JsonObject forbiddenErrors = new JsonObject();
-        
+
         for (Map.Entry<String, Object> entry : context.request()) {
             LOGGER.debug("validateRequest updateResource : checking the key & values..before collection. Key: {}",
                 entry.getKey());
@@ -146,7 +151,7 @@ class UpdateResourceHandler implements DBHandler {
 
             if (AJEntityResource.RESOURCE_URL.equalsIgnoreCase(entry.getKey())) {
                 JsonObject resourceIdWithURLDuplicates =
-                    DBHelper.getDuplicateResourcesByURL(entry.getValue().toString());
+                    ResourceRetrieveHelper.getDuplicateResourcesByURL(entry.getValue().toString());
                 if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
                     LOGGER.error("validateRequest : Duplicate resources found: {}", resourceIdWithURLDuplicates);
                     return new ExecutionResult<>(
@@ -179,48 +184,45 @@ class UpdateResourceHandler implements DBHandler {
                     validationErrors.put(entry.getKey(), MessageConstants.INVALID_VALUE);
                 }
             } else if (AJEntityResource.CONTENT_SUBFORMAT.equalsIgnoreCase(entry.getKey())) {
-                if (mapValue == null || mapValue.isEmpty()
-                    || !mapValue.endsWith(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE)) {
+                if (mapValue == null || mapValue.isEmpty() || !mapValue
+                    .endsWith(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE)) {
                     LOGGER.error("updateResource : content subformat is invalid! : {} ", entry.getKey());
                     validationErrors.put(entry.getKey(), MessageConstants.INVALID_VALUE);
                 } else {
-                    DBHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.CONTENT_SUBFORMAT_TYPE,
-                        mapValue);
+                    TypeHelper
+                        .setPGObject(this.updateRes, entry.getKey(), AJEntityResource.CONTENT_SUBFORMAT_TYPE, mapValue);
                 }
             } else if (AJEntityResource.JSONB_FIELDS.contains(entry.getKey())) {
-                DBHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.JSONB_FORMAT, mapValue);
+                TypeHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.JSONB_FORMAT, mapValue);
             } else if (AJEntityResource.UUID_FIELDS.contains(entry.getKey())) {
-                DBHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.UUID_TYPE, mapValue);
+                TypeHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.UUID_TYPE, mapValue);
             } else {
                 this.updateRes.set(entry.getKey(), entry.getValue()); // intentionally
                 // kept entry.getValue instead of mapValue as it needs to handle
                 // other datatypes like boolean
             }
         }
-        
+
         Integer licenseFromRequest = this.updateRes.getInteger(AJEntityResource.LICENSE);
-        if (licenseFromRequest != null && !DBHelper.isValidLicense(licenseFromRequest)) {
-            this.updateRes.setInteger(AJEntityResource.LICENSE, DBHelper.getDafaultLicense());
+        if (licenseFromRequest != null && !LicenseHelper.isValidLicense(licenseFromRequest)) {
+            this.updateRes.setInteger(AJEntityResource.LICENSE, LicenseHelper.getDafaultLicense());
         }
-        
+
         if (!validationErrors.isEmpty()) {
-            return new ExecutionResult<>(
-                MessageResponseFactory.createValidationErrorResponse(validationErrors),
+            return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(validationErrors),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
-        
+
         if (!forbiddenErrors.isEmpty()) {
             return new ExecutionResult<>(MessageResponseFactory.createForbiddenResponse(forbiddenErrors),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
-        
+
         if (this.updateRes.hasErrors()) {
-            return new ExecutionResult<>(
-                MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
+            return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(this.updateRes.errors()),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
-        
-        
+
         LOGGER.debug(" \n **** Model to save: {}", this.updateRes);
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
     }
@@ -236,8 +238,8 @@ class UpdateResourceHandler implements DBHandler {
         }
 
         // try to save
-        DBHelper.setPGObject(this.updateRes, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE,
-            context.userId());
+        TypeHelper
+            .setPGObject(this.updateRes, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, context.userId());
 
         if (!this.updateRes.save()) {
             LOGGER.error("executeRequest : Update resource failed! {} ", this.updateRes.errors());
@@ -248,8 +250,9 @@ class UpdateResourceHandler implements DBHandler {
         // save successful...try to propagate ownerData changes to other copies
         if (ownerDataToPropogateToCopies != null) {
             try {
-                DBHelper.updateOwnerDataToCopies(this.updateRes, context.resourceId(), ownerDataToPropogateToCopies,
-                    context.userId());
+                ResourceUpdateHelper
+                    .updateOwnerDataToCopies(this.updateRes, context.resourceId(), ownerDataToPropogateToCopies,
+                        context.userId());
                 LOGGER.debug(
                     "executeRequest : Updated resource ID: " + this.updateRes.getString(AJEntityResource.RESOURCE_ID));
 
@@ -260,15 +263,16 @@ class UpdateResourceHandler implements DBHandler {
             }
         }
 
-        return new ExecutionResult<>(MessageResponseFactory.createPutSuccessResponse("Location",
-            this.updateRes.getString(AJEntityResource.RESOURCE_ID)), ExecutionResult.ExecutionStatus.SUCCESSFUL);
+        return new ExecutionResult<>(MessageResponseFactory
+            .createPutSuccessResponse("Location", this.updateRes.getString(AJEntityResource.RESOURCE_ID)),
+            ExecutionResult.ExecutionStatus.SUCCESSFUL);
     }
 
     @Override
     public boolean handlerReadOnly() {
         return false;
     }
-    
+
     private boolean authorized() {
         String creator = this.fetchDBResourceData.getString(AJEntityResource.CREATOR_ID);
         String course = this.fetchDBResourceData.getString(AJEntityResource.COURSE_ID);
@@ -286,8 +290,9 @@ class UpdateResourceHandler implements DBHandler {
             // Check if user is one of collaborator on course, we do not
             // need to check the owner as course owner should be resource
             // creator
-            long authRecordCount = Base.count(AJEntityResource.TABLE_COURSE, AJEntityResource.AUTH_VIA_COURSE_FILTER,
-                course, context.userId(), context.userId());
+            long authRecordCount =
+                Base.count(AJEntityResource.TABLE_COURSE, AJEntityResource.AUTH_VIA_COURSE_FILTER, course,
+                    context.userId(), context.userId());
             if (authRecordCount >= 1) {
                 // Auth check successful
                 LOGGER.debug("Auth check successful based on course: {}", course);
@@ -296,8 +301,9 @@ class UpdateResourceHandler implements DBHandler {
         } else if (collection != null) {
             // Check if the user is one of collaborator on collection, we do
             // not need to check about course now
-            long authRecordCount = Base.count(AJEntityResource.TABLE_COLLECTION,
-                AJEntityResource.AUTH_VIA_COLLECTION_FILTER, collection, context.userId(), context.userId());
+            long authRecordCount =
+                Base.count(AJEntityResource.TABLE_COLLECTION, AJEntityResource.AUTH_VIA_COLLECTION_FILTER, collection,
+                    context.userId(), context.userId());
             if (authRecordCount >= 1) {
                 LOGGER.debug("Auth check successful based on collection: {}", collection);
                 return true;
@@ -307,7 +313,7 @@ class UpdateResourceHandler implements DBHandler {
         LOGGER.error("Auth check failed");
         return false;
     }
-    
+
     private boolean validate() {
         String course = this.fetchDBResourceData.getString(AJEntityResource.COURSE_ID);
         String collection = this.fetchDBResourceData.getString(AJEntityResource.COLLECTION_ID);

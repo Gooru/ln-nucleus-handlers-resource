@@ -1,6 +1,8 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers
+    .ResourceRetrieveHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.formatter.JsonFormatterBuilder;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
@@ -36,7 +38,7 @@ class FetchResourceHandler implements DBHandler {
 
     @Override
     public ExecutionResult<MessageResponse> executeRequest() {
-        AJEntityResource result = DBHelper.getResourceById(context.resourceId());
+        AJEntityResource result = ResourceRetrieveHelper.getResourceById(context.resourceId());
 
         if (result != null) {
             return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(new JsonObject(
