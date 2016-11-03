@@ -43,7 +43,7 @@ public final class MessageConstants {
     public static final String FIELD_NOT_ALLOWED = "Field not allowed";
     public static final String FIELD_NOT_NULL = "Field can't be null or empty";
     public static final String INVALID_VALUE = "Invalid value";
-    
+
     private MessageConstants() {
         throw new AssertionError();
     }

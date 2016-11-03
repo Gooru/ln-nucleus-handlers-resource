@@ -2,9 +2,12 @@ package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.
 
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers
+    .FetchResourceResponseDecorator;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers
     .ResourceRetrieveHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.SanityCheckerHelper;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.EntityConstants;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.ResourceHolder;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.formatter.JsonFormatterBuilder;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
@@ -18,6 +21,7 @@ class FetchResourceHandler implements DBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FetchResourceHandler.class);
     private final ProcessorContext context;
+    private ResourceHolder resourceHolder;
 
     public FetchResourceHandler(ProcessorContext context) {
         this.context = context;
@@ -34,23 +38,35 @@ class FetchResourceHandler implements DBHandler {
 
     @Override
     public ExecutionResult<MessageResponse> validateRequest() {
+
+        this.resourceHolder = ResourceRetrieveHelper.getResource(context.resourceId());
+        if (this.resourceHolder == null) {
+            LOGGER.error("Resource not found to delete: {} ", context.resourceId());
+            return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
     }
 
     @Override
     public ExecutionResult<MessageResponse> executeRequest() {
-        AJEntityResource result = ResourceRetrieveHelper.getResourceById(context.resourceId());
-
-        if (result != null) {
-            return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(new JsonObject(
-                JsonFormatterBuilder.buildSimpleJsonFormatter(false, AJEntityResource.RESOURCE_SPECIFIC_FIELDS)
-                    .toJson(result))), ExecutionResult.ExecutionStatus.SUCCESSFUL);
-
+        if (this.resourceHolder.getCategory() == ResourceHolder.RESOURCE_CATEGORY.RESOURCE_ORIGINAL) {
+            JsonObject result = new JsonObject(
+                JsonFormatterBuilder.buildSimpleJsonFormatter(false, EntityConstants.RESOURCE_FETCH_FIELDS, false)
+                    .toJson(resourceHolder.getOriginalResource()));
+            FetchResourceResponseDecorator
+                .processOriginalResourceFetchResponse(resourceHolder.getOriginalResource(), result);
+            return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(result),
+                ExecutionResult.ExecutionStatus.SUCCESSFUL);
+        } else {
+            JsonObject result = new JsonObject(
+                JsonFormatterBuilder.buildSimpleJsonFormatter(false, EntityConstants.RESOURCE_FETCH_FIELDS, true)
+                    .toJson(resourceHolder.getResource()));
+            FetchResourceResponseDecorator.processResourceRefFetchResponse(resourceHolder.getResource(), result);
+            return new ExecutionResult<>(MessageResponseFactory.createGetSuccessResponse(result),
+                ExecutionResult.ExecutionStatus.SUCCESSFUL);
         }
 
-        LOGGER.warn("FetchResourceHandler : Resource with id : {} : not found", context.resourceId());
-        return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
-            ExecutionResult.ExecutionStatus.FAILED);
     }
 
     @Override

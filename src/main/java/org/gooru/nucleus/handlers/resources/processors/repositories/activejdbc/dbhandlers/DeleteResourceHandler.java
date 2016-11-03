@@ -9,6 +9,7 @@ import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.d
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.TypeHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.EntityConstants;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.ResourceHolder;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
@@ -92,7 +93,7 @@ class DeleteResourceHandler implements DBHandler {
         AJEntityOriginalResource resource = this.resourceHolder.getOriginalResource();
         try {
             TypeHelper
-                .setPGObject(resource, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, this.context.userId());
+                .setPGObject(resource, AJEntityResource.MODIFIER_ID, EntityConstants.UUID_TYPE, this.context.userId());
             if (resource.hasErrors()) {
                 return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resource.errors()),
                     ExecutionResult.ExecutionStatus.FAILED);

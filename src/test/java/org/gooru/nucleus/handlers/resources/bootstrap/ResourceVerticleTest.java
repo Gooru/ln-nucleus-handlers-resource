@@ -32,6 +32,9 @@ public class ResourceVerticleTest {
     private final ResourceUpdateScenario resourceUpdateScenario = new ResourceUpdateScenario();
     private final ResourceFetchScenario resourceFetchScenario = new ResourceFetchScenario();
     private final ResourceNegativeScenario resourceNegativeScenario = new ResourceNegativeScenario();
+    private final DirectDeleteScenario directDeleteScenario = new DirectDeleteScenario();
+    private final DirectFetchScenario directFetchScenario = new DirectFetchScenario();
+    private final DirectCreateScenario directCreateScenario = new DirectCreateScenario();
 
     @BeforeClass
     public static void setUp(TestContext context) throws Exception {
@@ -107,4 +110,22 @@ public class ResourceVerticleTest {
     public void negativeResourceScenarios(TestContext context) throws Exception {
         resourceNegativeScenario.playScenario(context, eventBus);
     }
+
+    @Test
+    public void deleteResourceById(TestContext context) throws Exception {
+        directDeleteScenario.playScenario(context, eventBus);
+    }
+
+    @Test
+    public void fetchResourceById(TestContext context) throws Exception {
+        directFetchScenario.playScenario(context, eventBus);
+    }
+
+    @Test
+    public void createResourceStandalone(TestContext context) throws Exception {
+        directCreateScenario.playScenario(context, eventBus);
+    }
+
+
+
 }

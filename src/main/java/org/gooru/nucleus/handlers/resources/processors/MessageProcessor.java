@@ -86,9 +86,9 @@ class MessageProcessor implements Processor {
             return MessageResponseFactory.createInvalidRequestResponse("Invalid request id");
         }
         return RepoBuilder.buildResourceRepo(context).fetchResource(); // TODO
-                                                                       // Auto-generated
-                                                                       // method
-                                                                       // stub
+        // Auto-generated
+        // method
+        // stub
     }
 
     private MessageResponse processResourceCreate() {
@@ -135,8 +135,8 @@ class MessageProcessor implements Processor {
     }
 
     private static boolean validateUser(String userId) {
-        return !(userId == null || userId.isEmpty())
-            && (userId.equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS) || validateUuid(userId));
+        return !(userId == null || userId.isEmpty()) && (userId.equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)
+            || validateUuid(userId));
     }
 
     private static boolean validateUuid(String uuidString) {

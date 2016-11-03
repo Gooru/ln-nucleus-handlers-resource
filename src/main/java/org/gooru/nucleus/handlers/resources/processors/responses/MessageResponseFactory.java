@@ -92,7 +92,7 @@ public final class MessageResponseFactory {
         return new MessageResponse.Builder().failed().setStatusInternalError()
             .setResponseBody(new JsonObject().put(MessageConstants.MSG_MESSAGE, message)).build();
     }
-    
+
     public static MessageResponse createForbiddenResponse(JsonObject responseBody) {
         return new MessageResponse.Builder().failed().setStatusForbidden().setResponseBody(responseBody).build();
     }

@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.EntityConstants;
 import org.postgresql.util.PGobject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,7 +35,7 @@ public final class ResourceUpdateHelper {
         LOGGER.debug("updateOwnerDataToCopies: OwnerResourceID {}", ownerResourceId);
         int numRecsUpdated = 0;
         String mapValue;
-        List<Object> params = new ArrayList<Object>();
+        List<Object> params = new ArrayList<>();
         String updateStmt = null;
         if (!dataToBePropogated.isEmpty()) {
             for (Map.Entry<String, Object> entry : dataToBePropogated) {
@@ -52,7 +53,7 @@ public final class ResourceUpdateHelper {
                     (updateStmt == null) ? entry.getKey() + " = ?" : updateStmt + ", " + entry.getKey() + " = ?";
 
                 if (AJEntityResource.CONTENT_FORMAT.equalsIgnoreCase(entry.getKey())) {
-                    if (!AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE.equalsIgnoreCase(mapValue)) {
+                    if (!AJEntityResource.CONTENT_FORMAT_RESOURCE.equalsIgnoreCase(mapValue)) {
                         throw new IllegalArgumentException(
                             "content format should always be a 'resource' but {} has been sent: " + mapValue);
                     } else {
@@ -63,7 +64,7 @@ public final class ResourceUpdateHelper {
                     }
                 } else if (AJEntityResource.CONTENT_SUBFORMAT.equalsIgnoreCase(entry.getKey())) {
                     if (mapValue == null || mapValue.isEmpty() || !mapValue
-                        .endsWith(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE)) {
+                        .endsWith(AJEntityResource.CONTENT_FORMAT_RESOURCE)) {
                         throw new IllegalArgumentException(
                             "content sub format is not a valid resource format ; {} has been sent: " + mapValue);
                     } else {
@@ -74,12 +75,12 @@ public final class ResourceUpdateHelper {
                     }
                 } else if (AJEntityResource.JSONB_FIELDS.contains(entry.getKey())) {
                     PGobject jsonbFields = new PGobject();
-                    jsonbFields.setType(AJEntityResource.JSONB_FORMAT);
+                    jsonbFields.setType(EntityConstants.JSONB_FORMAT);
                     jsonbFields.setValue(entry.getValue().toString());
                     params.add(jsonbFields);
                 } else if (AJEntityResource.UUID_FIELDS.contains(entry.getKey())) {
                     PGobject uuidFields = new PGobject();
-                    uuidFields.setType(AJEntityResource.UUID_TYPE);
+                    uuidFields.setType(EntityConstants.UUID_TYPE);
                     uuidFields.setValue(mapValue);
                     params.add(uuidFields);
                 } else {

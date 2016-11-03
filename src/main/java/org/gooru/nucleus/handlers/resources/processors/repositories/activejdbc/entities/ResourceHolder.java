@@ -6,9 +6,9 @@ import java.util.Objects;
  * @author ashish on 17/10/16.
  */
 public final class ResourceHolder {
-    final AJEntityResource resource;
-    final AJEntityOriginalResource originalResource;
-    final RESOURCE_CATEGORY category;
+    private final AJEntityResource resource;
+    private final AJEntityOriginalResource originalResource;
+    private final RESOURCE_CATEGORY category;
 
     public enum RESOURCE_CATEGORY {
         RESOURCE_ORIGINAL,

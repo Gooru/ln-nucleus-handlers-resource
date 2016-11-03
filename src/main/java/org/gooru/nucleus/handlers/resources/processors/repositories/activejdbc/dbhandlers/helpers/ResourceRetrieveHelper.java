@@ -18,7 +18,7 @@ public final class ResourceRetrieveHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ResourceRetrieveHelper.class);
 
-    public ResourceRetrieveHelper() {
+    private ResourceRetrieveHelper() {
         throw new AssertionError();
     }
 
@@ -26,7 +26,7 @@ public final class ResourceRetrieveHelper {
         try {
             PGobject contentFormat = new PGobject();
             contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
-            contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
+            contentFormat.setValue(AJEntityResource.CONTENT_FORMAT_RESOURCE);
 
             LazyList<AJEntityResource> result =
                 AJEntityResource.findBySQL(AJEntityResource.FETCH_RESOURCE_BY_ID, resourceId, contentFormat);
@@ -66,8 +66,7 @@ public final class ResourceRetrieveHelper {
     private static ResourceHolder getResourceRefToDelete(String resourceId) {
         AJEntityResource resource;
         LazyList<AJEntityResource> result = AJEntityResource
-            .findBySQL(AJEntityResource.FETCH_RESOURCE_TO_DELETE, resourceId,
-                AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
+            .findBySQL(AJEntityResource.FETCH_RESOURCE_TO_DELETE, resourceId, AJEntityResource.CONTENT_FORMAT_RESOURCE);
 
         if (!result.isEmpty()) {
             resource = result.get(0);
@@ -76,40 +75,35 @@ public final class ResourceRetrieveHelper {
         return null;
     }
 
-
-    public static JsonObject getDuplicateResourcesByUrl(String inputUrl) {
+    public static JsonObject getDuplicateResourcesByUrl(AJEntityOriginalResource resource, JsonObject request) {
         JsonObject returnValue = null;
+        if (request.getBoolean(AJEntityOriginalResource.IS_REMOTE, true)) {
 
-        try {
-            PGobject contentFormat = new PGobject();
-            contentFormat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
-            contentFormat.setValue(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
-
-            LazyList<AJEntityResource> result =
-                AJEntityResource.findBySQL(AJEntityResource.FETCH_DUPLICATE_RESOURCES_BY_URL, inputUrl, contentFormat);
+            LazyList<AJEntityOriginalResource> result = AJEntityOriginalResource
+                .findBySQL(AJEntityOriginalResource.FETCH_DUPLICATE_RESOURCES,
+                    resource.getString(AJEntityOriginalResource.HTTP_DOMAIN),
+                    resource.getString(AJEntityOriginalResource.HTTP_PATH),
+                    resource.getString(AJEntityOriginalResource.HTTP_QUERY));
             LOGGER.debug("getDuplicateResourcesByURL ! : {} ", result.toString());
 
             if (!result.isEmpty()) {
                 JsonArray retArray = new JsonArray();
-                for (AJEntityResource model : result) {
-                    retArray.add(model.get(AJEntityResource.RESOURCE_ID).toString());
+                for (AJEntityOriginalResource model : result) {
+                    retArray.add(model.get(AJEntityOriginalResource.ID).toString());
                 }
                 returnValue = new JsonObject().put("duplicate_ids", retArray);
             }
-        } catch (SQLException se) {
-            LOGGER.error("getDuplicateResourcesByURL ! : {} ", se);
         }
+
         return returnValue;
     }
 
     public static JsonObject getCopiesOfAResource(AJEntityOriginalResource resource, String originalResourceId) {
         JsonObject returnValue = null;
 
-        TypeHelper.setPGObject(resource, AJEntityResource.CONTENT_FORMAT, AJEntityResource.CONTENT_FORMAT_TYPE,
-            AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE);
-
-        LazyList<AJEntityResource> result = AJEntityResource.findBySQL(AJEntityResource.FETCH_REFERENCES_OF_ORIGINAL,
-            AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE, originalResourceId);
+        LazyList<AJEntityResource> result = AJEntityResource
+            .findBySQL(AJEntityResource.FETCH_REFERENCES_OF_ORIGINAL, AJEntityResource.CONTENT_FORMAT_RESOURCE,
+                originalResourceId);
         if (!result.isEmpty()) {
             JsonArray idArray = new JsonArray();
             JsonArray collectionIdArray = new JsonArray();
@@ -127,4 +121,37 @@ public final class ResourceRetrieveHelper {
         }
         return returnValue;
     }
+
+    public static ResourceHolder getResource(String resourceId) {
+        Objects.requireNonNull(resourceId);
+        ResourceHolder resourceHolder = getResourceRef(resourceId);
+        if (resourceHolder != null) {
+            return resourceHolder;
+        }
+        return getOriginalResource(resourceId);
+    }
+
+    private static ResourceHolder getOriginalResource(String resourceId) {
+        AJEntityOriginalResource resource;
+        LazyList<AJEntityOriginalResource> result =
+            AJEntityOriginalResource.findBySQL(AJEntityOriginalResource.FETCH_RESOURCE, resourceId);
+        if (!result.isEmpty()) {
+            resource = result.get(0);
+            return new ResourceHolder(resource);
+        }
+        return null;
+    }
+
+    private static ResourceHolder getResourceRef(String resourceId) {
+        AJEntityResource resource;
+        LazyList<AJEntityResource> result = AJEntityResource
+            .findBySQL(AJEntityResource.FETCH_RESOURCE_BY_ID, resourceId, AJEntityResource.CONTENT_FORMAT_RESOURCE);
+
+        if (!result.isEmpty()) {
+            resource = result.get(0);
+            return new ResourceHolder(resource);
+        }
+        return null;
+    }
+
 }

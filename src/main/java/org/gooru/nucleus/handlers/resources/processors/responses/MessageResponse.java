@@ -20,8 +20,8 @@ public final class MessageResponse {
 
     // Private constructor
     private MessageResponse(JsonObject response) {
-        this.deliveryOptions = new DeliveryOptions().addHeader(MessageConstants.MSG_OP_STATUS,
-            response.getString(MessageConstants.MSG_OP_STATUS));
+        this.deliveryOptions = new DeliveryOptions()
+            .addHeader(MessageConstants.MSG_OP_STATUS, response.getString(MessageConstants.MSG_OP_STATUS));
         this.reply = response.getJsonObject(MessageConstants.RESP_CONTAINER_MBUS);
         this.event = response.getJsonObject(MessageConstants.RESP_CONTAINER_EVENT);
     }
@@ -144,8 +144,8 @@ public final class MessageResponse {
                 result = buildErrorResponse();
             } else {
                 result = new JsonObject();
-                result.put(MessageConstants.MSG_OP_STATUS, this.status).put(MessageConstants.RESP_CONTAINER_MBUS,
-                    buildResponseContainer());
+                result.put(MessageConstants.MSG_OP_STATUS, this.status)
+                    .put(MessageConstants.RESP_CONTAINER_MBUS, buildResponseContainer());
 
                 if (this.eventData != null && !this.eventData.isEmpty()) {
                     result.put(MessageConstants.RESP_CONTAINER_EVENT, this.eventData);
@@ -158,9 +158,9 @@ public final class MessageResponse {
             JsonObject result =
                 new JsonObject().put(MessageConstants.MSG_OP_STATUS, MessageConstants.MSG_OP_STATUS_ERROR);
             result.put(MessageConstants.RESP_CONTAINER_MBUS,
-                new JsonObject().put(MessageConstants.MSG_HTTP_STATUS, HttpConstants.HttpStatus.ERROR.getCode()).put(
-                    MessageConstants.MSG_HTTP_BODY,
-                    new JsonObject().put(MessageConstants.MSG_OP_STATUS_ERROR, new JsonObject())));
+                new JsonObject().put(MessageConstants.MSG_HTTP_STATUS, HttpConstants.HttpStatus.ERROR.getCode())
+                    .put(MessageConstants.MSG_HTTP_BODY,
+                        new JsonObject().put(MessageConstants.MSG_OP_STATUS_ERROR, new JsonObject())));
             return result;
         }
 

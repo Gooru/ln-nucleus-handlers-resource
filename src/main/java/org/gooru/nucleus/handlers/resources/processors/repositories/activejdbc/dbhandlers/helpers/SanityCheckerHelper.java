@@ -8,7 +8,7 @@ import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SanityCheckerHelper {
+public final class SanityCheckerHelper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SanityCheckerHelper.class);
 
@@ -47,4 +47,13 @@ public class SanityCheckerHelper {
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
     }
 
+    public static ExecutionResult<MessageResponse> verifyRequestBody(ProcessorContext context) {
+        if (context.request() == null || context.request().isEmpty()) {
+            LOGGER.warn("invalid request received to create resource");
+            return new ExecutionResult<>(
+                MessageResponseFactory.createInvalidRequestResponse("Invalid data provided to create resource"),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
+        return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+    }
 }

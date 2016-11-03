@@ -12,6 +12,7 @@ import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.d
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.ResourceUpdateHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.TypeHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.EntityConstants;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult.ExecutionStatus;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
@@ -129,8 +130,8 @@ class UpdateResourceHandler implements DBHandler {
         // compare input value and collect only changed attributes in new model
         // that we will use to update
         this.updateRes = new AJEntityResource();
-        TypeHelper.setPGObject(this.updateRes, AJEntityResource.RESOURCE_ID, AJEntityResource.UUID_TYPE,
-            context.resourceId());
+        TypeHelper
+            .setPGObject(this.updateRes, AJEntityResource.RESOURCE_ID, EntityConstants.UUID_TYPE, context.resourceId());
 
         LOGGER.debug("validateRequest updateResource : Iterate through the input Json now.");
 
@@ -150,8 +151,8 @@ class UpdateResourceHandler implements DBHandler {
             }
 
             if (AJEntityResource.RESOURCE_URL.equalsIgnoreCase(entry.getKey())) {
-                JsonObject resourceIdWithURLDuplicates =
-                    ResourceRetrieveHelper.getDuplicateResourcesByUrl(entry.getValue().toString());
+                JsonObject resourceIdWithURLDuplicates = null;
+                // ResourceRetrieveHelper.getDuplicateResourcesByUrl(entry.getValue().toString());
                 if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
                     LOGGER.error("validateRequest : Duplicate resources found: {}", resourceIdWithURLDuplicates);
                     return new ExecutionResult<>(
@@ -179,13 +180,13 @@ class UpdateResourceHandler implements DBHandler {
 
             // collect the attributes and values in the model.
             if (AJEntityResource.CONTENT_FORMAT.equalsIgnoreCase(entry.getKey())) {
-                if (!AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE.equalsIgnoreCase(mapValue)) {
+                if (!AJEntityResource.CONTENT_FORMAT_RESOURCE.equalsIgnoreCase(mapValue)) {
                     LOGGER.error("updateResource : content format is invalid! : {} ", entry.getKey());
                     validationErrors.put(entry.getKey(), MessageConstants.INVALID_VALUE);
                 }
             } else if (AJEntityResource.CONTENT_SUBFORMAT.equalsIgnoreCase(entry.getKey())) {
                 if (mapValue == null || mapValue.isEmpty() || !mapValue
-                    .endsWith(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE)) {
+                    .endsWith(AJEntityResource.CONTENT_FORMAT_RESOURCE)) {
                     LOGGER.error("updateResource : content subformat is invalid! : {} ", entry.getKey());
                     validationErrors.put(entry.getKey(), MessageConstants.INVALID_VALUE);
                 } else {
@@ -193,9 +194,9 @@ class UpdateResourceHandler implements DBHandler {
                         .setPGObject(this.updateRes, entry.getKey(), AJEntityResource.CONTENT_SUBFORMAT_TYPE, mapValue);
                 }
             } else if (AJEntityResource.JSONB_FIELDS.contains(entry.getKey())) {
-                TypeHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.JSONB_FORMAT, mapValue);
+                TypeHelper.setPGObject(this.updateRes, entry.getKey(), EntityConstants.JSONB_FORMAT, mapValue);
             } else if (AJEntityResource.UUID_FIELDS.contains(entry.getKey())) {
-                TypeHelper.setPGObject(this.updateRes, entry.getKey(), AJEntityResource.UUID_TYPE, mapValue);
+                TypeHelper.setPGObject(this.updateRes, entry.getKey(), EntityConstants.UUID_TYPE, mapValue);
             } else {
                 this.updateRes.set(entry.getKey(), entry.getValue()); // intentionally
                 // kept entry.getValue instead of mapValue as it needs to handle
@@ -239,7 +240,7 @@ class UpdateResourceHandler implements DBHandler {
 
         // try to save
         TypeHelper
-            .setPGObject(this.updateRes, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, context.userId());
+            .setPGObject(this.updateRes, AJEntityResource.MODIFIER_ID, EntityConstants.UUID_TYPE, context.userId());
 
         if (!this.updateRes.save()) {
             LOGGER.error("executeRequest : Update resource failed! {} ", this.updateRes.errors());

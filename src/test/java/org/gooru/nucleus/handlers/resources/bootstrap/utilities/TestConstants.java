@@ -10,7 +10,8 @@ public final class TestConstants {
 
     public static final String EMAIL = "email";
     public static final String EMAIL_DEFAULT_VALUE = "user@example.org";
-    public static final String USER_ID_DEFAULT_VALUE = UUID.randomUUID().toString();
+//    public static final String USER_ID_DEFAULT_VALUE = UUID.randomUUID().toString();
+    public static final String USER_ID_DEFAULT_VALUE = "64a29ede-2574-4219-8a64-36a8d972f0ea";
     public static final String ANONYMOUS = "anonymous";
 
     private TestConstants() {

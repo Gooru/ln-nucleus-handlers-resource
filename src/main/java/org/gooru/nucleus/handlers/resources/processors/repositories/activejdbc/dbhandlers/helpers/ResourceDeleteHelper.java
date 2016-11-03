@@ -7,6 +7,7 @@ import java.util.Objects;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.EntityConstants;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
@@ -28,7 +29,7 @@ public final class ResourceDeleteHelper {
         Objects.requireNonNull(originalResourceId);
 
         int numRecsUpdated;
-        List<Object> params = new ArrayList<Object>();
+        List<Object> params = new ArrayList<>();
         String creatorId = resource.getString(AJEntityOriginalResource.CREATOR_ID);
         String updateStmt = AJEntityResource.IS_DELETED + "= ? ";
         params.add(true);
@@ -60,7 +61,7 @@ public final class ResourceDeleteHelper {
 
     public static ExecutionResult<MessageResponse> markResourceRefAsDeleted(AJEntityResource resource,
         ProcessorContext context) {
-        TypeHelper.setPGObject(resource, AJEntityResource.MODIFIER_ID, AJEntityResource.UUID_TYPE, context.userId());
+        TypeHelper.setPGObject(resource, AJEntityResource.MODIFIER_ID, EntityConstants.UUID_TYPE, context.userId());
         if (resource.hasErrors()) {
             return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resource.errors()),
                 ExecutionResult.ExecutionStatus.FAILED);

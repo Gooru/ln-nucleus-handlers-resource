@@ -3,6 +3,7 @@ package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.
 import java.util.Map;
 
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.EntityConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +33,7 @@ public final class DBHelper {
             }
 
             if (AJEntityResource.CONTENT_FORMAT.equalsIgnoreCase(entry.getKey())) {
-                if (!AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE.equalsIgnoreCase(mapValue)) {
+                if (!AJEntityResource.CONTENT_FORMAT_RESOURCE.equalsIgnoreCase(mapValue)) {
                     throw new IllegalArgumentException(
                         "content format should always be a 'resource' but {} has been sent: " + mapValue);
                 } else {
@@ -42,7 +43,7 @@ public final class DBHelper {
                 }
             } else if (AJEntityResource.CONTENT_SUBFORMAT.equalsIgnoreCase(entry.getKey())) {
                 if (mapValue == null || mapValue.isEmpty() || !mapValue
-                    .endsWith(AJEntityResource.VALID_CONTENT_FORMAT_FOR_RESOURCE)) {
+                    .endsWith(AJEntityResource.CONTENT_FORMAT_RESOURCE)) {
                     throw new IllegalArgumentException(
                         "content sub format is not a valid resource format ; {} has been sent: " + mapValue);
                 } else {
@@ -51,9 +52,9 @@ public final class DBHelper {
                 }
             } else {
                 if (AJEntityResource.JSONB_FIELDS.contains(entry.getKey())) {
-                    TypeHelper.setPGObject(resource, entry.getKey(), AJEntityResource.JSONB_FORMAT, mapValue);
+                    TypeHelper.setPGObject(resource, entry.getKey(), EntityConstants.JSONB_FORMAT, mapValue);
                 } else if (AJEntityResource.UUID_FIELDS.contains(entry.getKey())) {
-                    TypeHelper.setPGObject(resource, entry.getKey(), AJEntityResource.UUID_TYPE, mapValue);
+                    TypeHelper.setPGObject(resource, entry.getKey(), EntityConstants.UUID_TYPE, mapValue);
                 } else {
                     resource.set(entry.getKey(), entry.getValue());
                 }
