@@ -63,7 +63,7 @@ public class AJEntityOriginalResource extends Model {
     public static final String UUID_TYPE = "uuid";
 
     private static final String IFRAME_BREAKER_REASON_TYPE_NAME = "iframe_breaker_type";
-    private static final List<String> RESOURCE_TYPES = Arrays
+    public static final List<String> RESOURCE_TYPES = Arrays
         .asList("video_resource", "webpage_resource", "interactive_resource", "image_resource", "text_resource",
             "audio_resource");
     private static final List<String> IFRAME_BREAKER_TYPES =

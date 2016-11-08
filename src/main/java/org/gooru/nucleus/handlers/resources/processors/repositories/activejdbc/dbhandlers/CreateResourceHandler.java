@@ -77,7 +77,7 @@ class CreateResourceHandler implements DBHandler {
             if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
                 LOGGER.error(
                     "validateRequest : Duplicate resource URL found. So cannot go ahead with creating new resource! "
-                        + "URL : {}", resource.getString(AJEntityResource.RESOURCE_URL));
+                        + "URL : {}", resource.getString(AJEntityResource.URL));
                 LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates);
                 return new ExecutionResult<>(
                     MessageResponseFactory.createValidationErrorResponse(resourceIdWithURLDuplicates),
@@ -110,9 +110,9 @@ class CreateResourceHandler implements DBHandler {
         }
 
         // successful...
-        LOGGER.debug("executeRequest : Created resource ID: " + this.resource.getString(AJEntityResource.RESOURCE_ID));
-        return new ExecutionResult<>(MessageResponseFactory
-            .createPostSuccessResponse("Location", this.resource.getString(AJEntityResource.RESOURCE_ID)),
+        LOGGER.debug("executeRequest : Created resource ID: " + this.resource.getString(AJEntityResource.ID));
+        return new ExecutionResult<>(
+            MessageResponseFactory.createPostSuccessResponse("Location", this.resource.getString(AJEntityResource.ID)),
             ExecutionResult.ExecutionStatus.SUCCESSFUL);
     }
 

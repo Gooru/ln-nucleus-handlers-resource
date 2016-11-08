@@ -109,7 +109,7 @@ public final class ResourceRetrieveHelper {
             JsonArray collectionIdArray = new JsonArray();
             String collectionId;
             for (AJEntityResource model : result) {
-                idArray.add(model.get(AJEntityResource.RESOURCE_ID).toString());
+                idArray.add(model.get(AJEntityResource.ID).toString());
                 collectionId = model.getString(AJEntityResource.COLLECTION_ID);
                 if (collectionId != null && !collectionId.isEmpty()) {
                     collectionIdArray.add(collectionId);
@@ -153,5 +153,4 @@ public final class ResourceRetrieveHelper {
         }
         return null;
     }
-
 }

@@ -97,8 +97,8 @@ public final class FetchResourceResponseDecorator {
                         metadata = new JsonObject();
                     }
                     JsonArray fieldValue = new JsonArray();
-                    for (int i = 0; i < intArray.length; i++) {
-                        fieldValue.add(intArray[i]);
+                    for (Integer anIntArray : intArray) {
+                        fieldValue.add(anIntArray);
                     }
                     metadata.put(dbFieldName, fieldValue);
                 }
@@ -113,7 +113,7 @@ public final class FetchResourceResponseDecorator {
         String originalContentId = resource.getString(AJEntityResource.ORIGINAL_CONTENT_ID);
         if (originalContentId == null) {
             LOGGER.warn("Resource reference does not have original content id: {}",
-                result.getString(AJEntityResource.RESOURCE_ID));
+                result.getString(AJEntityResource.ID));
             return;
         }
         LazyList<AJEntityOriginalResource> originalResources = AJEntityOriginalResource

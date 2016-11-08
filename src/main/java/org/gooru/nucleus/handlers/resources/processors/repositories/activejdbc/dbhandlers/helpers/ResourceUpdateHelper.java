@@ -1,13 +1,15 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers;
 
-import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-
+import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.EntityConstants;
-import org.postgresql.util.PGobject;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.ResourceHolder;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entitybuilders.EntityBuilder;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.validators.PayloadValidator;
+import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
+import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,84 +23,98 @@ public final class ResourceUpdateHelper {
         throw new AssertionError();
     }
 
-    /*
-     * updateOwnerDataToCopies: as a consequence of primary resource update, we
-     * need to update the copies of this resource - but ONLY owner specific data
-     * items.
-     *
-     * NOTE: This method does not do a lot of null checks etc; as all checks are
-     * already done by UpdateResource() method.
-     */
+    public static ExecutionResult<MessageResponse> validatePayload(ResourceHolder holder, ProcessorContext context) {
+        if (holder.getCategory() == ResourceHolder.RESOURCE_CATEGORY.RESOURCE_ORIGINAL) {
+            return validatePayloadForOriginalResource(holder.getOriginalResource(), context);
+        } else {
+            return ResourceRefUpdateHelper.validatePayloadForResourceRef(holder.getResource(), context);
+        }
+    }
 
-    public static int updateOwnerDataToCopies(AJEntityResource resource, String ownerResourceId,
-        JsonObject dataToBePropogated, String originalCreator) throws SQLException, IllegalArgumentException {
-        LOGGER.debug("updateOwnerDataToCopies: OwnerResourceID {}", ownerResourceId);
-        int numRecsUpdated = 0;
-        String mapValue;
-        List<Object> params = new ArrayList<>();
-        String updateStmt = null;
-        if (!dataToBePropogated.isEmpty()) {
-            for (Map.Entry<String, Object> entry : dataToBePropogated) {
-                mapValue = (entry.getValue() != null) ? entry.getValue().toString() : null;
+    private static ExecutionResult<MessageResponse> validatePayloadForOriginalResource(
+        AJEntityOriginalResource resource, ProcessorContext context) {
+        JsonObject errors = new DefaultPayloadValidator()
+            .validatePayload(context.request(), AJEntityOriginalResource.editFieldSelector(),
+                AJEntityOriginalResource.getValidatorRegistry());
+        if (errors != null && !errors.isEmpty()) {
+            LOGGER.warn("Validation errors for request");
+            return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(errors),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
+        return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+    }
 
-                if (AJEntityResource.NOTNULL_FIELDS.contains(entry.getKey())) {
-                    if (mapValue == null || mapValue.isEmpty()) {
-                        throw new IllegalArgumentException("Null value input for : " + entry.getKey());
-                    }
-                }
+    public static ExecutionResult<MessageResponse> updateResource(ResourceHolder holder, ProcessorContext context) {
+        if (holder.getCategory() == ResourceHolder.RESOURCE_CATEGORY.RESOURCE_ORIGINAL) {
+            return updateOriginalResource(holder.getOriginalResource(), context);
+        } else {
+            return ResourceRefUpdateHelper.updateResourceRef(holder.getResource(), context);
+        }
+    }
 
-                LOGGER.debug("updateOwnerDataToCopies: OwnerResourceID {}", entry.getKey());
+    private static ExecutionResult<MessageResponse> updateOriginalResource(AJEntityOriginalResource resource,
+        ProcessorContext context) {
+        ResourceMetadataHelper.flattenMetadataFields(context.request());
+        ResourceTaxonomyHelper.populateGutCodes(resource, context.request());
 
-                updateStmt =
-                    (updateStmt == null) ? entry.getKey() + " = ?" : updateStmt + ", " + entry.getKey() + " = ?";
+        new DefaultOriginalResourceBuilder()
+            .build(resource, context.request(), AJEntityOriginalResource.getConverterRegistry());
 
-                if (AJEntityResource.CONTENT_FORMAT.equalsIgnoreCase(entry.getKey())) {
-                    if (!AJEntityResource.CONTENT_FORMAT_RESOURCE.equalsIgnoreCase(mapValue)) {
-                        throw new IllegalArgumentException(
-                            "content format should always be a 'resource' but {} has been sent: " + mapValue);
-                    } else {
-                        PGobject contentformat = new PGobject();
-                        contentformat.setType(AJEntityResource.CONTENT_FORMAT_TYPE);
-                        contentformat.setValue(entry.getValue().toString());
-                        params.add(contentformat);
-                    }
-                } else if (AJEntityResource.CONTENT_SUBFORMAT.equalsIgnoreCase(entry.getKey())) {
-                    if (mapValue == null || mapValue.isEmpty() || !mapValue
-                        .endsWith(AJEntityResource.CONTENT_FORMAT_RESOURCE)) {
-                        throw new IllegalArgumentException(
-                            "content sub format is not a valid resource format ; {} has been sent: " + mapValue);
-                    } else {
-                        PGobject contentSubformat = new PGobject();
-                        contentSubformat.setType(AJEntityResource.CONTENT_SUBFORMAT_TYPE);
-                        contentSubformat.setValue(entry.getValue().toString());
-                        params.add(contentSubformat);
-                    }
-                } else if (AJEntityResource.JSONB_FIELDS.contains(entry.getKey())) {
-                    PGobject jsonbFields = new PGobject();
-                    jsonbFields.setType(EntityConstants.JSONB_FORMAT);
-                    jsonbFields.setValue(entry.getValue().toString());
-                    params.add(jsonbFields);
-                } else if (AJEntityResource.UUID_FIELDS.contains(entry.getKey())) {
-                    PGobject uuidFields = new PGobject();
-                    uuidFields.setType(EntityConstants.UUID_TYPE);
-                    uuidFields.setValue(mapValue);
-                    params.add(uuidFields);
-                } else {
-                    params.add(entry.getValue());
-                }
+        LicenseHelper.populateLicense(resource);
+
+        TypeHelper
+            .setPGObject(resource, AJEntityOriginalResource.MODIFIER_ID, EntityConstants.UUID_TYPE, context.userId());
+        ExecutionResult<MessageResponse> result = processUrlToUpdateForOriginalResource(resource, context);
+        if (result.hasFailed()) {
+            return result;
+        }
+
+        result = saveOriginalResource(resource, context);
+        if (result.hasFailed()) {
+            return result;
+        }
+
+        return ResourceRefUpdateHelper.updateResourceRefsForGivenOriginal(resource, context);
+
+    }
+
+    private static ExecutionResult<MessageResponse> saveOriginalResource(AJEntityOriginalResource resource,
+        ProcessorContext context) {
+        if (!resource.save()) {
+            LOGGER.error("Update original resource failed! {} ", resource.errors());
+            return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resource.errors()),
+                ExecutionResult.ExecutionStatus.FAILED);
+        }
+        return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.SUCCESSFUL);
+    }
+
+    private static ExecutionResult<MessageResponse> processUrlToUpdateForOriginalResource(
+        AJEntityOriginalResource resource, ProcessorContext context) {
+        String url = context.request().getString(AJEntityOriginalResource.URL);
+        if (url != null && !url.isEmpty()) {
+            ExecutionResult<MessageResponse> result = ResourceUrlHelper.handleUrl(resource, context.request());
+            if (result.hasFailed()) {
+                return result;
             }
 
-            LOGGER.debug("updateOwnerDataToCopies: Statement {}", updateStmt);
-
-            if (updateStmt != null) {
-                params.add(ownerResourceId);
-                params.add(originalCreator);
-                numRecsUpdated = AJEntityResource
-                    .update(updateStmt, AJEntityResource.FILTER_FETCH_REFERENCES_OF_ORIGINAL, params.toArray());
-                LOGGER.debug("updateOwnerDataToCopies : Update successful. Number of records updated: {}",
-                    numRecsUpdated);
+            JsonObject resourceIdWithURLDuplicates =
+                ResourceRetrieveHelper.getDuplicateResourcesByUrl(resource, context.request());
+            if (resourceIdWithURLDuplicates != null && !resourceIdWithURLDuplicates.isEmpty()) {
+                LOGGER.error("validateRequest : Duplicate resource URL found. So cannot go ahead with updating url! "
+                    + "URL : {}", resource.getString(AJEntityResource.URL));
+                LOGGER.error("validateRequest : Duplicate resources : {}", resourceIdWithURLDuplicates);
+                return new ExecutionResult<>(
+                    MessageResponseFactory.createValidationErrorResponse(resourceIdWithURLDuplicates),
+                    ExecutionResult.ExecutionStatus.FAILED);
             }
         }
-        return numRecsUpdated;
+        return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.SUCCESSFUL);
     }
+
+    private static class DefaultPayloadValidator implements PayloadValidator {
+    }
+
+    private static class DefaultOriginalResourceBuilder implements EntityBuilder<AJEntityOriginalResource> {
+    }
+
 }

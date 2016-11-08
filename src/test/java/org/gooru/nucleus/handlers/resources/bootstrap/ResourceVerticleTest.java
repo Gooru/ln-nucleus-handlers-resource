@@ -35,6 +35,8 @@ public class ResourceVerticleTest {
     private final DirectDeleteScenario directDeleteScenario = new DirectDeleteScenario();
     private final DirectFetchScenario directFetchScenario = new DirectFetchScenario();
     private final DirectCreateScenario directCreateScenario = new DirectCreateScenario();
+    private final DirectUpdateScenario directUpdateScenario = new DirectUpdateScenario();
+    private final DirectUpdateRefScenario directUpdateRefScenario = new DirectUpdateRefScenario();
 
     @BeforeClass
     public static void setUp(TestContext context) throws Exception {
@@ -126,6 +128,13 @@ public class ResourceVerticleTest {
         directCreateScenario.playScenario(context, eventBus);
     }
 
+    @Test
+    public void updateResourceStandalone(TestContext context) throws Exception {
+        directUpdateScenario.playScenario(context, eventBus);
+    }
 
-
+    @Test
+    public void updateResourceRefStandalone(TestContext context) throws Exception {
+        directUpdateRefScenario.playScenario(context, eventBus);
+    }
 }

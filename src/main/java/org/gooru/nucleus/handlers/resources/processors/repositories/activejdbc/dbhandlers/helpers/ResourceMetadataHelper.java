@@ -22,9 +22,11 @@ public final class ResourceMetadataHelper {
     private static void populateFields(JsonObject request, JsonObject metadata) {
         METADATA_FIELDS_TO_FLATTEN.forEach(field -> {
             if (request.getJsonArray(field) == null) {
-                JsonArray result = metadata.getJsonArray(field);
-                if (result != null && !result.isEmpty()) {
-                    request.put(field, result);
+                if (metadata != null && !metadata.isEmpty()) {
+                    JsonArray result = metadata.getJsonArray(field);
+                    if (result != null && !result.isEmpty()) {
+                        request.put(field, result);
+                    }
                 }
             }
         });
