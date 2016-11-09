@@ -85,7 +85,7 @@ public final class ResourceUrlHelper {
                 domain = domain.substring(4);
             }
             if (getPort() != 80 && getPort() != 443 && getPort() != -1) {
-                domain = domain + String.valueOf(getPort());
+                domain = domain + ':' + String.valueOf(getPort());
             }
             return domain.toLowerCase();
         }
