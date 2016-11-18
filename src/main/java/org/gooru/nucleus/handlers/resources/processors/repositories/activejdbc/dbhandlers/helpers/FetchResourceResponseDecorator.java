@@ -51,7 +51,7 @@ public final class FetchResourceResponseDecorator {
         if (displayGuide == null) {
             displayGuide = new JsonObject();
         }
-        displayGuide.put(IS_FRAME_BREAKER, isFrameBreaker);
+        displayGuide.put(IS_FRAME_BREAKER, isFrameBreaker ? 1 : 0);
     }
 
     private static boolean isDomainFrameBreaker(String domain) {
@@ -77,7 +77,7 @@ public final class FetchResourceResponseDecorator {
             displayGuide = new JsonObject();
             result.put(AJEntityOriginalResource.DISPLAY_GUIDE, displayGuide);
         }
-        displayGuide.put(targetFieldName, fieldValue);
+        displayGuide.put(targetFieldName, fieldValue ? 1 : 0);
     }
 
     private static void decorateMetadataForOriginalResource(AJEntityOriginalResource resource, JsonObject result) {

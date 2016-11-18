@@ -68,9 +68,8 @@ public final class RequestBuilder {
             + " Sciences\", \"framework_code\": \"C4\"}}");
 
         return new JsonObject().put("narration", "This resource is used to do integration test for resource - update")
-            .put("metadata",
-                new JsonObject().put("educational_use", new JsonArray("[21, 22]"))
-                    .put("audience", new JsonArray("[3,4]"))).put("taxonomy", taxonomy)
+            .put("metadata", new JsonObject().put("educational_use", new JsonArray("[21, 22]"))
+                .put("audience", new JsonArray("[3,4]"))).put("taxonomy", taxonomy)
             .put("thumbnail", "3b11d618-6091-4c3b-8eba-badcd6f4afd3.png");
 
     }
@@ -90,8 +89,7 @@ public final class RequestBuilder {
         String url = String.format("http://%s.integrationtest.example.com", UUID.randomUUID().toString());
         return new JsonObject().put("title", "Resource Create Integration test - update").put("url", url)
             .put("narration", "This resource is used to do integration test for resource - update")
-            .put("content_subformat", "webpage_resource")
-            .put("metadata",
+            .put("content_subformat", "webpage_resource").put("metadata",
                 new JsonObject().put("educational_use", new JsonArray("[21, 22]"))
                     .put("audience", new JsonArray("[3,4]"))).put("taxonomy", taxonomy)
             .put("thumbnail", "3b11d618-6091-4c3b-8eba-badcd6f4afd3.png");
@@ -160,7 +158,9 @@ public final class RequestBuilder {
             .put("content_subformat", "webpage_resource").put("metadata",
                 new JsonObject().put("educational_use", new JsonArray("[20, 24]"))
                     .put("audience", new JsonArray("[1,2,3,4]"))).put("taxonomy", taxonomy)
-            .put("thumbnail", "3b11d618-6091-4c3b-8eba-badcd6f4dfa3.png");
+            .put("thumbnail", "3b11d618-6091-4c3b-8eba-badcd6f4dfa3.png")
+            .put("copyright_owner", new JsonArray().add("me").add("you"))
+            .put("display_guide", new JsonObject().put("is_broken", 0).put("is_frame_breaker", 0));
     }
 }
 

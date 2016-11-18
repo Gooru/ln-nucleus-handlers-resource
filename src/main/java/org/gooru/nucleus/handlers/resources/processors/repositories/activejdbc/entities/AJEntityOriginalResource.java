@@ -137,7 +137,7 @@ public class AJEntityOriginalResource extends Model {
         validatorMap.put(METADATA, FieldValidator::validateJsonIfPresent);
         validatorMap.put(TAXONOMY, FieldValidator::validateJsonIfPresent);
         validatorMap.put(SUBJECT, FieldValidator::validateJsonIfPresent);
-        validatorMap.put(COPYRIGHT_OWNER, FieldValidator::validateJsonIfPresent);
+        validatorMap.put(COPYRIGHT_OWNER, FieldValidator::validateJsonArrayIfPresent);
         validatorMap.put(RESOURCE_INFO, FieldValidator::validateJsonIfPresent);
         validatorMap.put(DISPLAY_GUIDE, FieldValidator::validateJsonIfPresent);
         validatorMap.put(ACCESSIBILITY, FieldValidator::validateJsonIfPresent);

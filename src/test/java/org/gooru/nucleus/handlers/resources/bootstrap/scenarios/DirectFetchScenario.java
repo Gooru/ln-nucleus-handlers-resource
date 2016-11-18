@@ -15,7 +15,7 @@ import io.vertx.ext.unit.TestContext;
  */
 public class DirectFetchScenario implements Scenario {
     private final ResponseBuilder responseBuilder = new ResponseBuilder();
-    private final String resourceId = "923f4703-8973-4dd3-8e46-851851fd9c47";
+    private final String resourceId = "b2e53846-9b53-4bf2-8ecb-460ec28d14aa ";
 
     @Override
     public void playScenario(TestContext context, EventBus eventBus) {
