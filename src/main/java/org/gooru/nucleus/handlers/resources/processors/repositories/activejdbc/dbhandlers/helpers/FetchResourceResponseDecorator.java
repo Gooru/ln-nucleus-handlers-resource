@@ -141,29 +141,31 @@ public final class FetchResourceResponseDecorator {
     private static void processResourceRefFrameBreakerStatus(AJEntityResource resource,
         AJEntityOriginalResource originalResource, JsonObject result, JsonObject displayGuide) {
 
-        boolean isFrameBreaker = displayGuide.getBoolean(IS_FRAME_BREAKER, false);
-        if (isFrameBreaker) {
+        int isFrameBreaker = displayGuide.getInteger(IS_FRAME_BREAKER, 0);
+        if (isFrameBreaker == 1) {
             return;
         }
-        isFrameBreaker = originalResource.getBoolean(AJEntityOriginalResource.IS_IFRAME_BREAKER);
-        if (isFrameBreaker) {
-            displayGuide.put(IS_FRAME_BREAKER, true);
+        
+        boolean originalIsFrameBreaker = originalResource.getBoolean(AJEntityOriginalResource.IS_IFRAME_BREAKER);
+        if (originalIsFrameBreaker) {
+            displayGuide.put(IS_FRAME_BREAKER, 1);
             return;
         }
         String domain = originalResource.getString(AJEntityOriginalResource.HTTP_DOMAIN);
         if (isDomainFrameBreaker(domain)) {
-            displayGuide.put(IS_FRAME_BREAKER, true);
+            displayGuide.put(IS_FRAME_BREAKER, 1);
         }
     }
 
     private static void processResourceRefBrokenStatus(AJEntityResource resource,
         AJEntityOriginalResource originalResource, JsonObject result, JsonObject displayGuide) {
-        boolean isBroken = displayGuide.getBoolean(AJEntityOriginalResource.IS_BROKEN, false);
-        if (isBroken) {
+        int isBroken = displayGuide.getInteger(AJEntityOriginalResource.IS_BROKEN, 0);
+        if (isBroken == 1) {
             return;
         }
-        isBroken = originalResource.getBoolean(AJEntityOriginalResource.IS_BROKEN);
-        if (!isBroken) {
+        
+        boolean originalIsBroken = originalResource.getBoolean(AJEntityOriginalResource.IS_BROKEN);
+        if (!originalIsBroken) {
             return;
         }
         displayGuide.put(AJEntityOriginalResource.IS_BROKEN, isBroken);
