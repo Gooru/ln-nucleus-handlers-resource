@@ -141,7 +141,7 @@ public final class FetchResourceResponseDecorator {
     private static void processResourceRefFrameBreakerStatus(AJEntityResource resource,
         AJEntityOriginalResource originalResource, JsonObject result, JsonObject displayGuide) {
 
-        boolean isFrameBreaker = displayGuide.getBoolean(IS_FRAME_BREAKER);
+        boolean isFrameBreaker = displayGuide.getBoolean(IS_FRAME_BREAKER, false);
         if (isFrameBreaker) {
             return;
         }

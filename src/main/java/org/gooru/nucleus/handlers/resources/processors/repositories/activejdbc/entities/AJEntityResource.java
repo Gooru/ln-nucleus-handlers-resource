@@ -58,8 +58,13 @@ public class AJEntityResource extends Model {
         .asList(null, null, null, CONTENT_SUBFORMAT_TYPE, EntityConstants.JSONB_FORMAT, EntityConstants.JSONB_FORMAT,
             EntityConstants.JSONB_FORMAT));
 
+    //Ideally Resource copies are allowed to update only these fields,
+    //However this needs to changed at FE as well, hence allowing more fields to update 
+    //public static final Set<String> EDITABLE_FIELDS =
+    //    new HashSet<>(Arrays.asList(NARRATION, THUMBNAIL, METADATA, TAXONOMY, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
     public static final Set<String> EDITABLE_FIELDS =
-        new HashSet<>(Arrays.asList(NARRATION, THUMBNAIL, METADATA, TAXONOMY, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
+        new HashSet<>(Arrays.asList(CONTENT_SUBFORMAT, COPYRIGHT_OWNER, DESCRIPTION, IS_COPYRIGHT_OWNER, TITLE,
+            VISIBLE_ON_PROFILE, NARRATION, THUMBNAIL, METADATA, TAXONOMY, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
 
     public static final String FETCH_RESOURCE_BY_ID =
         " SELECT id, title, url, creator_id, modifier_id, narration, description, content_format, content_subformat, "
@@ -130,6 +135,7 @@ public class AJEntityResource extends Model {
         converterMap.put(INFO, (FieldConverter::convertFieldToJson));
         converterMap.put(DISPLAY_GUIDE, (FieldConverter::convertFieldToJson));
         converterMap.put(ACCESSIBILITY, (FieldConverter::convertFieldToJson));
+        converterMap.put(COPYRIGHT_OWNER, (FieldConverter::convertFieldToJson));
 
         return Collections.unmodifiableMap(converterMap);
     }
@@ -144,7 +150,7 @@ public class AJEntityResource extends Model {
         validatorMap.put(THUMBNAIL, (value) -> FieldValidator.validateStringIfPresent(value, 2000));
         validatorMap.put(METADATA, FieldValidator::validateJsonIfPresent);
         validatorMap.put(TAXONOMY, FieldValidator::validateJsonIfPresent);
-        validatorMap.put(COPYRIGHT_OWNER, FieldValidator::validateJsonIfPresent);
+        validatorMap.put(COPYRIGHT_OWNER, FieldValidator::validateJsonArrayIfPresent);
         validatorMap.put(INFO, FieldValidator::validateJsonIfPresent);
         validatorMap.put(DISPLAY_GUIDE, FieldValidator::validateJsonIfPresent);
         validatorMap.put(ACCESSIBILITY, FieldValidator::validateJsonIfPresent);
