@@ -32,6 +32,11 @@ public class ResourceVerticleTest {
     private final ResourceUpdateScenario resourceUpdateScenario = new ResourceUpdateScenario();
     private final ResourceFetchScenario resourceFetchScenario = new ResourceFetchScenario();
     private final ResourceNegativeScenario resourceNegativeScenario = new ResourceNegativeScenario();
+    private final DirectDeleteScenario directDeleteScenario = new DirectDeleteScenario();
+    private final DirectFetchScenario directFetchScenario = new DirectFetchScenario();
+    private final DirectCreateScenario directCreateScenario = new DirectCreateScenario();
+    private final DirectUpdateScenario directUpdateScenario = new DirectUpdateScenario();
+    private final DirectUpdateRefScenario directUpdateRefScenario = new DirectUpdateRefScenario();
 
     @BeforeClass
     public static void setUp(TestContext context) throws Exception {
@@ -106,5 +111,30 @@ public class ResourceVerticleTest {
     @Test
     public void negativeResourceScenarios(TestContext context) throws Exception {
         resourceNegativeScenario.playScenario(context, eventBus);
+    }
+
+    @Test
+    public void deleteResourceById(TestContext context) throws Exception {
+        directDeleteScenario.playScenario(context, eventBus);
+    }
+
+    @Test
+    public void fetchResourceById(TestContext context) throws Exception {
+        directFetchScenario.playScenario(context, eventBus);
+    }
+
+    @Test
+    public void createResourceStandalone(TestContext context) throws Exception {
+        directCreateScenario.playScenario(context, eventBus);
+    }
+
+    @Test
+    public void updateResourceStandalone(TestContext context) throws Exception {
+        directUpdateScenario.playScenario(context, eventBus);
+    }
+
+    @Test
+    public void updateResourceRefStandalone(TestContext context) throws Exception {
+        directUpdateRefScenario.playScenario(context, eventBus);
     }
 }

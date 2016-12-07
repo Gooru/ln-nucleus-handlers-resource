@@ -8,5 +8,5 @@ import io.vertx.ext.unit.TestContext;
  */
 public interface Scenario {
 
-    public void playScenario(TestContext context, EventBus eventBus);
+    void playScenario(TestContext context, EventBus eventBus);
 }

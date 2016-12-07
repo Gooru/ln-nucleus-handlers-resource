@@ -7,7 +7,7 @@ import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.d
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 
-public class UtilityManager implements Initializer, Finalizer {
+public final class UtilityManager implements Initializer, Finalizer {
     private static final UtilityManager ourInstance = new UtilityManager();
 
     public static UtilityManager getInstance() {

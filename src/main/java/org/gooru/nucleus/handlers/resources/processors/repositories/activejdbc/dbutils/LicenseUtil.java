@@ -5,7 +5,7 @@ import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class LicenseUtil {
+public final class LicenseUtil {
     private static Integer defaultLicenseCode;
     private static final String defaultLicenseLabel = "Public Domain";
 

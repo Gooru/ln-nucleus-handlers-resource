@@ -7,9 +7,10 @@ import java.util.List;
  */
 public final class JsonFormatterBuilder {
 
-    public static JsonFormatter buildSimpleJsonFormatter(boolean pretty, List<String> attributes) {
+    public static JsonFormatter buildSimpleJsonFormatter(boolean pretty, List<String> attributes,
+        boolean errorOnNonExistingField) {
 
-        return new SimpleJsonFormatter(pretty, attributes);
+        return new SimpleJsonFormatter(pretty, attributes, errorOnNonExistingField);
     }
 
     private JsonFormatterBuilder() {
