@@ -27,10 +27,12 @@ class SimpleJsonFormatter implements JsonFormatter {
     private final String[] attributes;
     private final boolean pretty;
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleJsonFormatter.class);
+    private final boolean errorOnNonExistingField;
 
-    public SimpleJsonFormatter(boolean pretty, List<String> attributes) {
+    public SimpleJsonFormatter(boolean pretty, List<String> attributes, boolean errorOnNonExistingField) {
         this.pretty = pretty;
         this.attributes = (attributes != null && attributes.size() > 0) ? lowerCased(attributes) : null;
+        this.errorOnNonExistingField = errorOnNonExistingField;
     }
 
     @Override
@@ -90,7 +92,16 @@ class SimpleJsonFormatter implements JsonFormatter {
             }
             String name = names[i];
             sb.append('"').append(name).append("\":");
-            Object v = model.get(name);
+            Object v;
+            if (errorOnNonExistingField) {
+                v = model.get(name);
+            } else {
+                try {
+                    v = model.get(name);
+                } catch (IllegalArgumentException e) {
+                    v = null;
+                }
+            }
             if (v == null) {
                 sb.append("null");
             } else if (v instanceof Number || v instanceof Boolean) {
@@ -99,7 +110,7 @@ class SimpleJsonFormatter implements JsonFormatter {
                 sb.append('"').append(Convert.toIsoString((Date) v)).append('"');
             } else if (v instanceof PGobject && ((PGobject) v).getType().equalsIgnoreCase(JSONB_TYPE)) {
                 sb.append(Convert.toString(v));
-            } else if (v instanceof String){
+            } else if (v instanceof String) {
                 sb.append('"');
                 try {
                     sb.append(StringEscapeUtils.escapeJava(String.valueOf(v)));
