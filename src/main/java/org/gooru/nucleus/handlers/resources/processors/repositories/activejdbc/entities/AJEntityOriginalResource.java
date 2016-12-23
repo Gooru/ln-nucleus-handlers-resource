@@ -73,8 +73,8 @@ public class AJEntityOriginalResource extends Model {
     public static final String FETCH_RESOURCE_FOR_DELETE =
         "select id, creator_id from original_resource where id = ?::uuid and is_deleted = false";
     public static final String FETCH_DUPLICATE_RESOURCES =
-        "SELECT id FROM original_resource WHERE http_domain = ? AND http_path = ? AND http_query = ? AND is_deleted ="
-            + " false";
+        "SELECT * FROM original_resource WHERE http_domain = ? AND coalesce(http_path, 'P') = ? AND coalesce(http_query, 'Q') = ? AND "
+        + "is_deleted = false and is_remote = true;";
     public static final String FETCH_RESOURCE =
         "select id, title, url, is_remote, http_domain, is_broken, is_iframe_breaker, "
             + "iframe_breaker_reason, creator_id, modifier_id, narration, description, publish_status, publish_date, "
