@@ -78,12 +78,14 @@ public final class ResourceRetrieveHelper {
     public static JsonObject getDuplicateResourcesByUrl(AJEntityOriginalResource resource, JsonObject request) {
         JsonObject returnValue = null;
         if (request.getBoolean(AJEntityOriginalResource.IS_REMOTE, true)) {
-
+            String httpPath = resource.getString(AJEntityOriginalResource.HTTP_PATH);
+            String httpQuery = resource.getString(AJEntityOriginalResource.HTTP_QUERY);
+            httpPath = httpPath == null ? "P" : httpPath;
+            httpQuery= httpQuery == null ? "Q" : httpQuery;
+            
             LazyList<AJEntityOriginalResource> result = AJEntityOriginalResource
                 .findBySQL(AJEntityOriginalResource.FETCH_DUPLICATE_RESOURCES,
-                    resource.getString(AJEntityOriginalResource.HTTP_DOMAIN),
-                    resource.getString(AJEntityOriginalResource.HTTP_PATH),
-                    resource.getString(AJEntityOriginalResource.HTTP_QUERY));
+                    resource.getString(AJEntityOriginalResource.HTTP_DOMAIN), httpPath, httpQuery);
             LOGGER.debug("getDuplicateResourcesByURL ! : {} ", result.toString());
 
             if (!result.isEmpty()) {
