@@ -1,15 +1,17 @@
 package org.gooru.nucleus.handlers.resources.processors;
 
-import java.util.UUID;
+import static org.gooru.nucleus.handlers.resources.processors.utils.ValidationUtils.validateUser;
 
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
-import org.gooru.nucleus.handlers.resources.processors.repositories.RepoBuilder;
+import org.gooru.nucleus.handlers.resources.processors.commands.CommandProcessorBuilder;
+import org.gooru.nucleus.handlers.resources.processors.exceptions.VersionDeprecatedException;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import io.vertx.core.MultiMap;
 import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
 
@@ -27,78 +29,28 @@ class MessageProcessor implements Processor {
 
     @Override
     public MessageResponse process() {
-        MessageResponse result;
         try {
-            // Validate the message itself
             ExecutionResult<MessageResponse> validateResult = validateAndInitialize();
             if (validateResult.isCompleted()) {
                 return validateResult.result();
             }
 
             final String msgOp = message.headers().get(MessageConstants.MSG_HEADER_OP);
-            switch (msgOp) {
-            case MessageConstants.MSG_OP_RES_CREATE:
-                result = processResourceCreate();
-                break;
-            case MessageConstants.MSG_OP_RES_GET:
-                result = processResourceGet();
-                break;
-            case MessageConstants.MSG_OP_RES_UPDATE:
-                result = processResourceUpdate();
-                break;
-            case MessageConstants.MSG_OP_RES_DELETE:
-                result = processResourceDelete();
-                break;
-            default:
-                LOGGER.error("Invalid operation type passed in, not able to handle");
-                return MessageResponseFactory.createInvalidRequestResponse("Invalid resource id");
-            }
-            return result;
+            return CommandProcessorBuilder.lookupBuilder(msgOp).build(createContext()).process();
+
+        } catch (VersionDeprecatedException e) {
+            LOGGER.error("Version is deprecated");
+            return MessageResponseFactory.createVersionDeprecatedResponse();
         } catch (Throwable e) {
             LOGGER.error("Unhandled exception in processing", e);
             return MessageResponseFactory.createInternalErrorResponse();
         }
     }
 
-    private MessageResponse processResourceDelete() {
-        ProcessorContext context = createContext();
-        if (isIdInvalid(context)) {
-            return MessageResponseFactory.createInvalidRequestResponse("Invalid request id");
-        }
-        return RepoBuilder.buildResourceRepo(context).deleteResource();
-    }
-
-    private MessageResponse processResourceUpdate() {
-        ProcessorContext context = createContext();
-        if (isIdInvalid(context)) {
-            return MessageResponseFactory.createInvalidRequestResponse("Invalid request id");
-        }
-        if (context.request() == null || context.request().isEmpty()) {
-            LOGGER.error("Invalid request, json not available. Aborting");
-            return MessageResponseFactory.createInvalidRequestResponse("Invalid Json");
-        }
-        return RepoBuilder.buildResourceRepo(context).updateResource();
-    }
-
-    private MessageResponse processResourceGet() {
-        ProcessorContext context = createContext();
-        if (isIdInvalid(context)) {
-            return MessageResponseFactory.createInvalidRequestResponse("Invalid request id");
-        }
-        return RepoBuilder.buildResourceRepo(context).fetchResource(); // TODO
-        // Auto-generated
-        // method
-        // stub
-    }
-
-    private MessageResponse processResourceCreate() {
-        ProcessorContext context = createContext();
-        return RepoBuilder.buildResourceRepo(context).createResource();
-    }
-
     private ProcessorContext createContext() {
-        String resourceId = message.headers().get(MessageConstants.RESOURCE_ID);
-        return new ProcessorContext(userId, prefs, request, resourceId);
+        MultiMap headers = message.headers();
+        String resourceId = headers.get(MessageConstants.RESOURCE_ID);
+        return new ProcessorContext(userId, prefs, request, resourceId, headers);
     }
 
     private ExecutionResult<MessageResponse> validateAndInitialize() {
@@ -130,33 +82,7 @@ class MessageProcessor implements Processor {
                 ExecutionResult.ExecutionStatus.FAILED);
         }
 
-        // All is well, continue processing
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
     }
 
-    private static boolean validateUser(String userId) {
-        return !(userId == null || userId.isEmpty()) && (userId.equalsIgnoreCase(MessageConstants.MSG_USER_ANONYMOUS)
-            || validateUuid(userId));
-    }
-
-    private static boolean validateUuid(String uuidString) {
-        try {
-            UUID.fromString(uuidString);
-            return true;
-        } catch (IllegalArgumentException e) {
-            LOGGER.error("Invalid request, id is not a valid uuid. Aborting");
-            return false;
-        } catch (Exception e) {
-            LOGGER.error("Invalid request, id is not a valid uuid. Aborting");
-            return false;
-        }
-    }
-
-    private static boolean isIdInvalid(ProcessorContext context) {
-        if (context.resourceId() == null || context.resourceId().isEmpty()) {
-            LOGGER.error("Invalid request, resource id not available. Aborting");
-            return true;
-        }
-        return !validateUuid(context.resourceId());
-    }
 }

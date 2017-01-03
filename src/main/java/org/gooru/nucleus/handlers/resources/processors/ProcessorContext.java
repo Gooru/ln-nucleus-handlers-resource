@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.resources.processors;
 
+import io.vertx.core.MultiMap;
 import io.vertx.core.json.JsonObject;
 
 /**
@@ -7,18 +8,20 @@ import io.vertx.core.json.JsonObject;
  */
 public class ProcessorContext {
 
-    final private String userId;
-    final private JsonObject prefs;
-    final private JsonObject request;
-    final private String resourceId;
+    private final String userId;
+    private final JsonObject prefs;
+    private final JsonObject request;
+    private final String resourceId;
+    private final MultiMap requestHeaders;
 
-    public ProcessorContext(String userId, JsonObject prefs, JsonObject request, String resourceId) {
-        if (prefs == null || userId == null || prefs.isEmpty()) {
+    public ProcessorContext(String userId, JsonObject prefs, JsonObject request, String resourceId, MultiMap headers) {
+        if (prefs == null || userId == null || prefs.isEmpty() || headers == null || headers.isEmpty()) {
             throw new IllegalStateException("Processor Context creation failed because of invalid values");
         }
         this.userId = userId;
         this.prefs = prefs.copy();
         this.request = request != null ? request.copy() : null;
+        this.requestHeaders = headers;
         // resource id can be null in case of create and hence can't validate
         // them unless we know the op type also
         // Do not want to build dependency on op for this context to work and
@@ -42,4 +45,7 @@ public class ProcessorContext {
         return this.resourceId;
     }
 
+    public MultiMap requestHeaders() {
+        return this.requestHeaders;
+    }
 }
