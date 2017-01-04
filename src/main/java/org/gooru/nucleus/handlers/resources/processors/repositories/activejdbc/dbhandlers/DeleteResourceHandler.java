@@ -1,5 +1,6 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
+import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbauth.AuthorizerBuilder;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.ResourceDeleteHelper;
@@ -7,6 +8,7 @@ import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.d
     .ResourceRetrieveHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.SanityCheckerHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.TypeHelper;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityArchievedOriginalResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.EntityConstants;
@@ -14,6 +16,7 @@ import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.e
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
+import org.javalite.activejdbc.Base;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -91,26 +94,29 @@ class DeleteResourceHandler implements DBHandler {
 
     private ExecutionResult<MessageResponse> deleteOriginalResource() {
         AJEntityOriginalResource resource = this.resourceHolder.getOriginalResource();
+        String creatorId = resource.getString(AJEntityOriginalResource.CREATOR_ID);
         try {
-            TypeHelper
-                .setPGObject(resource, AJEntityResource.MODIFIER_ID, EntityConstants.UUID_TYPE, this.context.userId());
-            if (resource.hasErrors()) {
-                return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resource.errors()),
+            
+            int count = Base.exec(AJEntityArchievedOriginalResource.INSERT_FROM_ORIGINAL_RESOURCE, context.resourceId());
+            if (count == 0) {
+                LOGGER.info("error in archieving original resource");
+                return new ExecutionResult<>(
+                    MessageResponseFactory.createValidationErrorResponse(
+                        new JsonObject().put(MessageConstants.MSG_MESSAGE, "Error in archieving original resource")),
                     ExecutionResult.ExecutionStatus.FAILED);
             }
-
-            resource.set(AJEntityResource.IS_DELETED, true);
-            if (!resource.save()) {
+            
+            if (!resource.delete()) {
                 LOGGER.info("error in delete resource, returning errors");
                 return new ExecutionResult<>(MessageResponseFactory.createValidationErrorResponse(resource.errors()),
                     ExecutionResult.ExecutionStatus.FAILED);
             }
 
-            LOGGER.info("original resource marked as deleted successfully");
-            JsonObject resourceCopyIds = ResourceRetrieveHelper.getCopiesOfAResource(resource, context.resourceId());
+            LOGGER.info("original resource deleted successfully");
+            JsonObject resourceCopyIds = ResourceRetrieveHelper.getCopiesOfAResource(context.resourceId());
             if (resourceCopyIds != null && !resourceCopyIds.isEmpty()) {
                 int deletedResourceCopies =
-                    ResourceDeleteHelper.deleteResourceReferences(resource, context.resourceId());
+                    ResourceDeleteHelper.deleteResourceReferences(creatorId, context.resourceId());
                 if (deletedResourceCopies >= 0) {
                     return new ExecutionResult<>(MessageResponseFactory.createDeleteSuccessResponse(resourceCopyIds),
                         ExecutionResult.ExecutionStatus.SUCCESSFUL);
