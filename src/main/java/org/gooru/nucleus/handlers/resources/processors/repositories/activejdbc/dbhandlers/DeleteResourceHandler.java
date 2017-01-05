@@ -7,11 +7,8 @@ import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.d
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers
     .ResourceRetrieveHelper;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.SanityCheckerHelper;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.TypeHelper;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityArchievedOriginalResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.EntityConstants;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.ResourceHolder;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
@@ -97,7 +94,7 @@ class DeleteResourceHandler implements DBHandler {
         String creatorId = resource.getString(AJEntityOriginalResource.CREATOR_ID);
         try {
             
-            int count = Base.exec(AJEntityArchievedOriginalResource.INSERT_FROM_ORIGINAL_RESOURCE, context.resourceId());
+            int count = Base.exec(AJEntityOriginalResource.INSERT_FROM_ORIGINAL_RESOURCE, context.resourceId());
             if (count == 0) {
                 LOGGER.info("error in archieving original resource");
                 return new ExecutionResult<>(
