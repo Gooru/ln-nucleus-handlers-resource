@@ -96,10 +96,10 @@ class DeleteResourceHandler implements DBHandler {
             
             int count = Base.exec(AJEntityOriginalResource.INSERT_FROM_ORIGINAL_RESOURCE, context.resourceId());
             if (count == 0) {
-                LOGGER.info("error in archieving original resource");
+                LOGGER.info("error in archiving original resource");
                 return new ExecutionResult<>(
                     MessageResponseFactory.createValidationErrorResponse(
-                        new JsonObject().put(MessageConstants.MSG_MESSAGE, "Error in archieving original resource")),
+                        new JsonObject().put(MessageConstants.MSG_MESSAGE, "Error in archiving original resource")),
                     ExecutionResult.ExecutionStatus.FAILED);
             }
             
