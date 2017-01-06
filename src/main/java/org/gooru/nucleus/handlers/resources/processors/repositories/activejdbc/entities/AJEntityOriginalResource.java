@@ -61,6 +61,9 @@ public class AJEntityOriginalResource extends Model {
     public static final String VALID_CONTENT_FORMAT_FOR_RESOURCE = "resource";
     public static final String JSONB_FORMAT = "jsonb";
     public static final String UUID_TYPE = "uuid";
+    public static final String TENANT = "tenant";
+    public static final String TENANT_ROOT = "tenant_root";
+
 
     private static final String IFRAME_BREAKER_REASON_TYPE_NAME = "iframe_breaker_type";
     public static final List<String> RESOURCE_TYPES = Arrays
@@ -121,6 +124,8 @@ public class AJEntityOriginalResource extends Model {
         converterMap.put(RESOURCE_INFO, (FieldConverter::convertFieldToJson));
         converterMap.put(DISPLAY_GUIDE, (FieldConverter::convertFieldToJson));
         converterMap.put(ACCESSIBILITY, (FieldConverter::convertFieldToJson));
+        converterMap.put(TENANT, (fieldValue -> FieldConverter.convertFieldToUuid((String) fieldValue)));
+        converterMap.put(TENANT_ROOT, (fieldValue -> FieldConverter.convertFieldToUuid((String) fieldValue)));
 
         return Collections.unmodifiableMap(converterMap);
     }
@@ -148,6 +153,8 @@ public class AJEntityOriginalResource extends Model {
         validatorMap.put(IS_COPYRIGHT_OWNER, FieldValidator::validateBooleanIfPresent);
         validatorMap.put(CONTENT_SUBFORMAT, RESOURCE_TYPES::contains);
         validatorMap.put(IFRAME_BREAKER_REASON, IFRAME_BREAKER_TYPES::contains);
+        validatorMap.put(TENANT, (FieldValidator::validateUuid));
+        validatorMap.put(TENANT_ROOT, (FieldValidator::validateUuid));
         return Collections.unmodifiableMap(validatorMap);
     }
 
@@ -175,6 +182,23 @@ public class AJEntityOriginalResource extends Model {
 
     public static ConverterRegistry getConverterRegistry() {
         return new OriginalResourceConverterRegistry();
+    }
+
+    public void setTenant(String tenant) {
+        setFieldUsingConverter(TENANT, tenant);
+    }
+
+    public void setTenantRoot(String tenantRoot) {
+        setFieldUsingConverter(TENANT_ROOT, tenantRoot);
+    }
+
+    private void setFieldUsingConverter(String fieldName, Object fieldValue) {
+        FieldConverter fc = converterRegistry.get(fieldName);
+        if (fc != null) {
+            this.set(fieldName, fc.convertField(fieldValue));
+        } else {
+            this.set(fieldName, fieldValue);
+        }
     }
 
     private static class OriginalResourceValidatorRegistry implements ValidatorRegistry {

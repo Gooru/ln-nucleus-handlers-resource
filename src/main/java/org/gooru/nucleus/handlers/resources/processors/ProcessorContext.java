@@ -13,6 +13,7 @@ public class ProcessorContext {
     private final JsonObject request;
     private final String resourceId;
     private final MultiMap requestHeaders;
+    private final TenantContext tenantContext;
 
     public ProcessorContext(String userId, JsonObject session, JsonObject request, String resourceId, MultiMap headers) {
         if (session == null || userId == null || session.isEmpty() || headers == null || headers.isEmpty()) {
@@ -27,6 +28,7 @@ public class ProcessorContext {
         // Do not want to build dependency on op for this context to work and
         // hence is open ended. Worst case would be RTE, so beware
         this.resourceId = resourceId;
+        this.tenantContext = new TenantContext(session);
     }
 
     public String userId() {
@@ -47,5 +49,42 @@ public class ProcessorContext {
 
     public MultiMap requestHeaders() {
         return this.requestHeaders;
+    }
+
+    public String tenant() {
+        return this.tenantContext.tenant();
+    }
+
+    public String tenantRoot() {
+        return this.tenantContext.tenantRoot();
+    }
+
+    private static class TenantContext {
+        private static final String TENANT = "tenant";
+        private static final String TENANT_ID = "tenant_id";
+        private static final String TENANT_ROOT = "tenant_root";
+
+        private final String tenantId;
+        private final String tenantRoot;
+
+        TenantContext(JsonObject session) {
+            JsonObject tenantJson = session.getJsonObject(TENANT);
+            if (tenantJson == null || tenantJson.isEmpty()) {
+                throw new IllegalStateException("Tenant Context invalid");
+            }
+            this.tenantId = tenantJson.getString(TENANT_ID);
+            if (tenantId == null || tenantId.isEmpty()) {
+                throw new IllegalStateException("Tenant Context with invalid tenant");
+            }
+            this.tenantRoot = tenantJson.getString(TENANT_ROOT);
+        }
+
+        public String tenant() {
+            return this.tenantId;
+        }
+
+        public String tenantRoot() {
+            return this.tenantRoot;
+        }
     }
 }

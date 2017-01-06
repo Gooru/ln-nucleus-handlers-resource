@@ -47,6 +47,8 @@ public class AJEntityResource extends Model {
     public static final String LESSON_ID = "lesson_id";
     public static final String COLLECTION_ID = "collection_id";
     public static final String SEQUENCE_ID = "sequence_id";
+    public static final String TENANT = "tenant";
+    public static final String TENANT_ROOT = "tenant_root";
 
     public static final String CONTENT_FORMAT_RESOURCE = "resource";
 
@@ -59,7 +61,7 @@ public class AJEntityResource extends Model {
             EntityConstants.JSONB_FORMAT));
 
     //Ideally Resource copies are allowed to update only these fields,
-    //However this needs to changed at FE as well, hence allowing more fields to update 
+    //However this needs to changed at FE as well, hence allowing more fields to update
     //public static final Set<String> EDITABLE_FIELDS =
     //    new HashSet<>(Arrays.asList(NARRATION, THUMBNAIL, METADATA, TAXONOMY, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
     public static final Set<String> EDITABLE_FIELDS =
@@ -136,6 +138,8 @@ public class AJEntityResource extends Model {
         converterMap.put(DISPLAY_GUIDE, (FieldConverter::convertFieldToJson));
         converterMap.put(ACCESSIBILITY, (FieldConverter::convertFieldToJson));
         converterMap.put(COPYRIGHT_OWNER, (FieldConverter::convertFieldToJson));
+        converterMap.put(TENANT, (fieldValue -> FieldConverter.convertFieldToUuid((String) fieldValue)));
+        converterMap.put(TENANT_ROOT, (fieldValue -> FieldConverter.convertFieldToUuid((String) fieldValue)));
 
         return Collections.unmodifiableMap(converterMap);
     }
@@ -157,6 +161,8 @@ public class AJEntityResource extends Model {
         validatorMap.put(VISIBLE_ON_PROFILE, FieldValidator::validateBooleanIfPresent);
         validatorMap.put(IS_COPYRIGHT_OWNER, FieldValidator::validateBooleanIfPresent);
         validatorMap.put(CONTENT_SUBFORMAT, AJEntityOriginalResource.RESOURCE_TYPES::contains);
+        validatorMap.put(TENANT, (FieldValidator::validateUuid));
+        validatorMap.put(TENANT_ROOT, (FieldValidator::validateUuid));
         return Collections.unmodifiableMap(validatorMap);
     }
 
@@ -170,6 +176,23 @@ public class AJEntityResource extends Model {
 
     public static ConverterRegistry getConverterRegistry() {
         return new ResourceRefConverterRegistry();
+    }
+
+    public void setTenant(String tenant) {
+        setFieldUsingConverter(TENANT, tenant);
+    }
+
+    public void setTenantRoot(String tenantRoot) {
+        setFieldUsingConverter(TENANT_ROOT, tenantRoot);
+    }
+
+    private void setFieldUsingConverter(String fieldName, Object fieldValue) {
+        FieldConverter fc = converterRegistry.get(fieldName);
+        if (fc != null) {
+            this.set(fieldName, fc.convertField(fieldValue));
+        } else {
+            this.set(fieldName, fieldValue);
+        }
     }
 
     private static class ResourceRefValidatorRegistry implements ValidatorRegistry {
