@@ -5,7 +5,6 @@ import java.util.List;
 import java.util.Objects;
 
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
-import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.EntityConstants;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
@@ -23,14 +22,13 @@ public final class ResourceDeleteHelper {
         throw new AssertionError();
     }
 
-    public static int deleteResourceReferences(AJEntityOriginalResource resource, String originalResourceId) {
+    public static int deleteResourceReferences(String creatorId, String originalResourceId) {
 
-        Objects.requireNonNull(resource);
+        Objects.requireNonNull(creatorId);
         Objects.requireNonNull(originalResourceId);
 
         int numRecsUpdated;
         List<Object> params = new ArrayList<>();
-        String creatorId = resource.getString(AJEntityOriginalResource.CREATOR_ID);
         String updateStmt = AJEntityResource.IS_DELETED + "= ? ";
         params.add(true);
         params.add(originalResourceId);
