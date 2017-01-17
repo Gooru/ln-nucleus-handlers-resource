@@ -64,6 +64,8 @@ public class AJEntityOriginalResource extends Model {
     public static final String TENANT = "tenant";
     public static final String TENANT_ROOT = "tenant_root";
 
+    public static final String PUBLISHED_FILTER = "id = ?::uuid and publish_status = 'published'::publish_status_type;";
+    private static final String PUBLISH_STATUS_PUBLISHED = "published";
 
     private static final String IFRAME_BREAKER_REASON_TYPE_NAME = "iframe_breaker_type";
     public static final List<String> RESOURCE_TYPES = Arrays
@@ -79,11 +81,12 @@ public class AJEntityOriginalResource extends Model {
         "SELECT * FROM original_resource WHERE http_domain = ? AND coalesce(http_path, 'P') = ? AND coalesce(http_query, 'Q') = ? AND "
         + "is_deleted = false and is_remote = true;";
     public static final String FETCH_RESOURCE =
-        "select id, title, url, is_remote, http_domain, is_broken, is_iframe_breaker, "
-            + "iframe_breaker_reason, creator_id, modifier_id, narration, description, publish_status, publish_date, "
-            + "subject, language, narration, description, content_subformat, audience, educational_use, metadata, "
-            + "taxonomy, thumbnail, is_copyright_owner, copyright_owner, info, visible_on_profile, display_guide,"
-            + "accessibility, license, creator_system from original_resource where id = ?::uuid and is_deleted = false";
+        "select id, title, url, is_remote, http_domain, is_broken, is_iframe_breaker, tenant, tenant_root, "
+            + "publish_status, iframe_breaker_reason, creator_id, modifier_id, narration, description, "
+            + "publish_status, publish_date, subject, language, narration, description, content_subformat, audience, "
+            + "educational_use, metadata, taxonomy, thumbnail, is_copyright_owner, copyright_owner, info, "
+            + "visible_on_profile, display_guide,accessibility, license, creator_system from original_resource where "
+            + "id = ?::uuid and is_deleted = false";
 
     public static final String FETCH_RESOURCE_FOR_BROKEN_DETECTION = "select is_remote, http_domain, is_broken, "
         + "is_iframe_breaker from original_resource where id = ?::uuid and is_deleted = false";
@@ -190,6 +193,19 @@ public class AJEntityOriginalResource extends Model {
 
     public void setTenantRoot(String tenantRoot) {
         setFieldUsingConverter(TENANT_ROOT, tenantRoot);
+    }
+
+    public String getTenant() {
+        return this.getString(TENANT);
+    }
+
+    public String getTenantRoot() {
+        return this.getString(TENANT_ROOT);
+    }
+
+    public boolean isResourcePublished() {
+        String publishStatus = this.getString(PUBLISH_STATUS);
+        return PUBLISH_STATUS_PUBLISHED.equalsIgnoreCase(publishStatus);
     }
 
     private void setFieldUsingConverter(String fieldName, Object fieldValue) {

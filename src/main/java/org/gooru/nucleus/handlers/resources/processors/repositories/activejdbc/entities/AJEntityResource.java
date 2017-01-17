@@ -24,6 +24,7 @@ public class AJEntityResource extends Model {
     public static final String ORIGINAL_CONTENT_ID = "original_content_id";
     public static final String PUBLISH_DATE = "publish_date";
     public static final String NARRATION = "narration";
+    private static final String PUBLISH_STATUS = "publish_status";
     public static final String DESCRIPTION = "description";
     public static final String CONTENT_FORMAT = "content_format";
     public static final String CONTENT_FORMAT_TYPE = "content_format_type";
@@ -51,6 +52,7 @@ public class AJEntityResource extends Model {
     public static final String TENANT_ROOT = "tenant_root";
 
     public static final String CONTENT_FORMAT_RESOURCE = "resource";
+    private static final String PUBLISH_STATUS_PUBLISHED = "published";
 
     // only owner (original creator of the resource) can change, which will have
     // to update all the copied records of the resource
@@ -64,20 +66,16 @@ public class AJEntityResource extends Model {
     //However this needs to changed at FE as well, hence allowing more fields to update
     //public static final Set<String> EDITABLE_FIELDS =
     //    new HashSet<>(Arrays.asList(NARRATION, THUMBNAIL, METADATA, TAXONOMY, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
-    public static final Set<String> EDITABLE_FIELDS =
-        new HashSet<>(Arrays.asList(CONTENT_SUBFORMAT, COPYRIGHT_OWNER, DESCRIPTION, IS_COPYRIGHT_OWNER, TITLE,
-            VISIBLE_ON_PROFILE, NARRATION, THUMBNAIL, METADATA, TAXONOMY, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
+    public static final Set<String> EDITABLE_FIELDS = new HashSet<>(Arrays
+        .asList(CONTENT_SUBFORMAT, COPYRIGHT_OWNER, DESCRIPTION, IS_COPYRIGHT_OWNER, TITLE, VISIBLE_ON_PROFILE,
+            NARRATION, THUMBNAIL, METADATA, TAXONOMY, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
 
     public static final String FETCH_RESOURCE_BY_ID =
         " SELECT id, title, url, creator_id, modifier_id, narration, description, content_format, content_subformat, "
             + "metadata, taxonomy, original_content_id, original_creator_id, is_deleted, is_copyright_owner, "
             + "copyright_owner, visible_on_profile, thumbnail, info, display_guide, accessibility, course_id, "
-            + "unit_id, lesson_id, collection_id, license FROM content WHERE id = ?::uuid AND content_format = "
-            + "?::content_format_type AND is_deleted = false";
-
-    public static final String FETCH_DUPLICATE_RESOURCES_BY_URL =
-        "SELECT id FROM content WHERE url = ? AND content_format = ?::content_format_type AND original_content_id is "
-            + "null AND is_deleted = false";
+            + "unit_id, lesson_id, collection_id, license, publish_status, tenant, tenant_root FROM content WHERE id "
+            + "= ?::uuid AND content_format = ?::content_format_type AND is_deleted = false";
 
     public static final String FETCH_RESOURCE_TO_DELETE =
         "SELECT id, creator_id, original_content_id, original_creator_id, course_id, unit_id, lesson_id, "
@@ -100,22 +98,10 @@ public class AJEntityResource extends Model {
     public static final String AUTH_VIA_COLLECTION_FILTER =
         "id = ?::uuid and (owner_id = ?::uuid or collaborator ?? ?)";
     public static final String AUTH_VIA_COURSE_FILTER = "id = ?::uuid and (owner_id = ?::uuid or collaborator ?? ?)";
+    public static final String PUBLISHED_FILTER = "id = ?::uuid and publish_status = 'published'::publish_status_type;";
 
     public static final String UPDATE_CONTAINER_TIMESTAMP =
         "update collection set updated_at = now() where id = ?::uuid and is_deleted = 'false'";
-
-    // jsonb fields relevant to resource
-    public static final List<String> JSONB_FIELDS =
-        new ArrayList<>(Arrays.asList(METADATA, TAXONOMY, COPYRIGHT_OWNER, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
-
-    // jsonb fields relevant to resource
-    public static final List<String> UUID_FIELDS = new ArrayList<>(Arrays
-        .asList(ID, CREATOR_ID, MODIFIER_ID, ORIGINAL_CONTENT_ID, ORIGINAL_CREATOR_ID, COURSE_ID, UNIT_ID, LESSON_ID,
-            COLLECTION_ID));
-
-    // not null fields in db
-    public static final List<String> NOTNULL_FIELDS =
-        new ArrayList<>(Arrays.asList(TITLE, CREATOR_ID, MODIFIER_ID, ORIGINAL_CREATOR_ID, CONTENT_SUBFORMAT));
 
     private static final Map<String, FieldValidator> validatorRegistry;
     private static final Map<String, FieldConverter> converterRegistry;
@@ -184,6 +170,27 @@ public class AJEntityResource extends Model {
 
     public void setTenantRoot(String tenantRoot) {
         setFieldUsingConverter(TENANT_ROOT, tenantRoot);
+    }
+
+    public String getCourseId() {
+        return this.getString(COURSE_ID);
+    }
+
+    public String getCollectionId() {
+        return this.getString(COLLECTION_ID);
+    }
+
+    public String getTenant() {
+        return this.getString(TENANT);
+    }
+
+    public String getTenantRoot() {
+        return this.getString(TENANT_ROOT);
+    }
+
+    public boolean isResourcePublished() {
+        String publishStatus = this.getString(PUBLISH_STATUS);
+        return PUBLISH_STATUS_PUBLISHED.equalsIgnoreCase(publishStatus);
     }
 
     private void setFieldUsingConverter(String fieldName, Object fieldValue) {
