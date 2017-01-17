@@ -68,6 +68,9 @@ dependencies {
     // Test dependencies
     testCompile "junit:junit:${junitVersion}"
     testCompile "io.vertx:vertx-unit:${vertxVersion}"
+
+    // Other projects
+    compile project(':nucleus-libs-tenant')
 }
 
 shadowJar {
