@@ -62,14 +62,13 @@ final class ResourceRefUpdateHelper {
         if (refUpdatePayload == null || refUpdatePayload.isEmpty()) {
             return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.SUCCESSFUL);
         }
-        PreparedStatement ps = createResourceRefUpdateStatementForGivenOriginal(context, refUpdatePayload);
+        PreparedStatement ps = Base.startBatch(AJEntityResource.UPDATE_REFERENCES_OF_ORIGINAL);
         try {
-            List<Object> params = new ArrayList<>(refUpdatePayload.size());
-            Iterator<Map.Entry<String, Object>> it = refUpdatePayload.iterator();
-            while (it.hasNext()) {
-                Map.Entry<String, Object> entry = it.next();
-                params.add(String.valueOf(entry.getValue()));
-            }
+            List<Object> params = new ArrayList<>(AJEntityResource.OWNER_SPECIFIC_FIELDS.size() + 1);
+            AJEntityResource.OWNER_SPECIFIC_FIELDS.forEach(field -> {
+                params.add(String.valueOf(resource.get(field)));
+            });
+            params.add(resource.get(AJEntityOriginalResource.ID));
             Base.addBatch(ps, params.toArray());
             Base.executeBatch(ps);
             ps.close();
@@ -93,40 +92,6 @@ final class ResourceRefUpdateHelper {
                 ExecutionResult.ExecutionStatus.FAILED);
         }
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
-    }
-
-    private static PreparedStatement createResourceRefUpdateStatementForGivenOriginal(ProcessorContext context,
-        JsonObject refUpdatePayload) {
-        StringBuilder query =
-            new StringBuilder().append("UPDATE ").append(AJEntityResource.TABLE_RESOURCE).append(" SET ");
-        Iterator<Map.Entry<String, Object>> it = refUpdatePayload.iterator();
-        for (; ; ) {
-            Map.Entry<String, Object> entry = it.next();
-            query.append(entry.getKey()).append(getTypedAttributeForQuery(entry.getKey()));
-            if (it.hasNext()) {
-                query.append(", ");
-            } else {
-                break;
-            }
-        }
-        query.append(getWhereClause(context)).toString();
-        PreparedStatement ps = Base.startBatch(query.toString());
-        LOGGER.debug("query to update resource ref :{}", query.toString());
-        return ps;
-    }
-
-    private static String getWhereClause(ProcessorContext context) {
-        return " where " + AJEntityResource.ORIGINAL_CONTENT_ID + " = '" + context.resourceId() + "'::"
-            + EntityConstants.UUID_TYPE;
-    }
-    
-    private static String getTypedAttributeForQuery(String field) {
-        String type = ownerFieldNameTypeMap.get(field);
-        if (type == null || Objects.equals(type, "boolean")) {
-            return " = ?";
-        } else {
-            return " = ?::" + type;
-        }
     }
 
     private static JsonObject getPayloadToUpdateRefs(JsonObject request) {
