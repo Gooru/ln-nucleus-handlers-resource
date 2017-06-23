@@ -93,7 +93,7 @@ public class AJEntityResource extends Model {
     
     public static final String UPDATE_REFERENCES_OF_ORIGINAL =
         "UPDATE content SET title = ?, url = ?, description = ?, content_subformat = ?::content_subformat_type, info = ?::jsonb,"
-        + " display_guide = ?::jsonb, accessibility = ?::jsonb where original_content_id = ?::uuid";
+        + " display_guide = ?::jsonb, accessibility = ?::jsonb where original_content_id = ?::uuid AND is_deleted = false";
 
     // owner or collaborator at course or collection level are authorized to
     // delete the resource.

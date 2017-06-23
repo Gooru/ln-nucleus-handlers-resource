@@ -4,10 +4,8 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
@@ -64,8 +62,11 @@ final class ResourceRefUpdateHelper {
         }
         PreparedStatement ps = Base.startBatch(AJEntityResource.UPDATE_REFERENCES_OF_ORIGINAL);
         try {
+            // +1 is for the extra parameter added in query for original_content_id
             List<Object> params = new ArrayList<>(AJEntityResource.OWNER_SPECIFIC_FIELDS.size() + 1);
             AJEntityResource.OWNER_SPECIFIC_FIELDS.forEach(field -> {
+                // Need to update this code to handle int or other type of fields
+                // So far there is no such field hence doing String.valueOf
                 params.add(String.valueOf(resource.get(field)));
             });
             params.add(resource.get(AJEntityOriginalResource.ID));
