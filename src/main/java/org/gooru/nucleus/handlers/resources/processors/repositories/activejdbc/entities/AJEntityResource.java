@@ -56,6 +56,7 @@ public class AJEntityResource extends Model {
 
     // only owner (original creator of the resource) can change, which will have
     // to update all the copied records of the resource
+    // Any update in this list should also be reflected in UpdateResourceRef update query
     public static final List<String> OWNER_SPECIFIC_FIELDS =
         new ArrayList<>(Arrays.asList(TITLE, URL, DESCRIPTION, CONTENT_SUBFORMAT, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
     public static final List<String> OWNER_SPECIFIC_FIELDS_TYPES = new ArrayList<>(Arrays
@@ -89,6 +90,10 @@ public class AJEntityResource extends Model {
     public static final String FETCH_REFERENCES_OF_ORIGINAL =
         " SELECT id, collection_id FROM content WHERE content_format = ?::content_format_type AND original_content_id"
             + " = ?::uuid AND is_deleted = false";
+    
+    public static final String UPDATE_REFERENCES_OF_ORIGINAL =
+        "UPDATE content SET title = ?, url = ?, description = ?, content_subformat = ?::content_subformat_type, info = ?::jsonb,"
+        + " display_guide = ?::jsonb, accessibility = ?::jsonb where original_content_id = ?::uuid AND is_deleted = false";
 
     // owner or collaborator at course or collection level are authorized to
     // delete the resource.
