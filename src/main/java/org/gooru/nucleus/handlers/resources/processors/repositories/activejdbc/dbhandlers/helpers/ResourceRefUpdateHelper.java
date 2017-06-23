@@ -1,7 +1,11 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
@@ -58,13 +62,20 @@ final class ResourceRefUpdateHelper {
         if (refUpdatePayload == null || refUpdatePayload.isEmpty()) {
             return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.SUCCESSFUL);
         }
-        String query = createResourceRefUpdateStatementForGivenOriginal(resource, context, refUpdatePayload);
-        LOGGER.debug("Update ref statement: {}", query);
+        PreparedStatement ps = createResourceRefUpdateStatementForGivenOriginal(context, refUpdatePayload);
         try {
-            long updatedRefCount = Base.exec(query);
-            LOGGER.info("Resource '{}' updated along with '{}' references", context.resourceId(), updatedRefCount);
+            List<Object> params = new ArrayList<>(refUpdatePayload.size());
+            Iterator<Map.Entry<String, Object>> it = refUpdatePayload.iterator();
+            while (it.hasNext()) {
+                Map.Entry<String, Object> entry = it.next();
+                params.add(String.valueOf(entry.getValue()));
+            }
+            Base.addBatch(ps, params.toArray());
+            Base.executeBatch(ps);
+            ps.close();
+            LOGGER.info("Resource '{}' updated along with references", context.resourceId());
             return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.SUCCESSFUL);
-        } catch (DBException e) {
+        } catch (DBException | SQLException e) {
             LOGGER.error("Error updating references for resource '{}'", context.resourceId(), e);
             return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse("Error from store"),
                 ExecutionResult.ExecutionStatus.FAILED);
@@ -84,41 +95,37 @@ final class ResourceRefUpdateHelper {
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
     }
 
-    private static String createResourceRefUpdateStatementForGivenOriginal(AJEntityOriginalResource resource,
-        ProcessorContext context, JsonObject refUpdatePayload) {
+    private static PreparedStatement createResourceRefUpdateStatementForGivenOriginal(ProcessorContext context,
+        JsonObject refUpdatePayload) {
         StringBuilder query =
             new StringBuilder().append("UPDATE ").append(AJEntityResource.TABLE_RESOURCE).append(" SET ");
         Iterator<Map.Entry<String, Object>> it = refUpdatePayload.iterator();
         for (; ; ) {
             Map.Entry<String, Object> entry = it.next();
-            query.append(getTypedAttributeValueForQuery(entry.getKey(), String.valueOf(entry.getValue())));
+            query.append(entry.getKey()).append(getTypedAttributeForQuery(entry.getKey()));
             if (it.hasNext()) {
                 query.append(", ");
             } else {
                 break;
             }
         }
-        return query.append(getWhereClause(context)).toString();
+        query.append(getWhereClause(context)).toString();
+        PreparedStatement ps = Base.startBatch(query.toString());
+        LOGGER.debug("query to update resource ref :{}", query.toString());
+        return ps;
     }
 
     private static String getWhereClause(ProcessorContext context) {
         return " where " + AJEntityResource.ORIGINAL_CONTENT_ID + " = '" + context.resourceId() + "'::"
             + EntityConstants.UUID_TYPE;
     }
-
-    private static String getTypedAttributeValueForQuery(String field, String value) {
+    
+    private static String getTypedAttributeForQuery(String field) {
         String type = ownerFieldNameTypeMap.get(field);
-        return " " + field + " = " + getTypedValue(value, type);
-    }
-
-    private static String getTypedValue(String value, String type) {
-        StringBuilder result = new StringBuilder();
-        if (type == null) {
-            return result.append('\'').append(value).append('\'').toString();
-        } else if (Objects.equals(type, "boolean")) {
-            return value;
+        if (type == null || Objects.equals(type, "boolean")) {
+            return " = ?";
         } else {
-            return result.append('\'').append(value).append("'::").append(type).toString();
+            return " = ?::" + type;
         }
     }
 
