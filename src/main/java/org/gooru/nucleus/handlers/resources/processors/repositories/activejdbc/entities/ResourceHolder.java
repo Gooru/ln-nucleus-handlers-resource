@@ -46,4 +46,8 @@ public final class ResourceHolder {
     public RESOURCE_CATEGORY getCategory() {
         return this.category;
     }
+
+    public boolean isHoldingOriginalResource() {
+        return RESOURCE_CATEGORY.RESOURCE_ORIGINAL == this.category;
+    }
 }

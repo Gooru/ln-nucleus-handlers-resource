@@ -1,6 +1,8 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbauth;
 
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.ResourceHolder;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 
@@ -24,6 +26,14 @@ public final class AuthorizerBuilder {
     public static Authorizer<ResourceHolder> buildCreateAuthorizer(ProcessorContext context) {
         // Upstream checks should make sure that user is not anonymous
         return model -> new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+    }
+
+    public static Authorizer<AJEntityOriginalResource> buildTenantAuthorizer(ProcessorContext context) {
+        return new TenantAuthorizer(context);
+    }
+
+    public static Authorizer<AJEntityResource> buildTenantResourceRefAuthorizer(ProcessorContext context) {
+        return new TenantResourceRefAuthorizer(context);
     }
 
 }

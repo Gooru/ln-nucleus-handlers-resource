@@ -101,8 +101,8 @@ public final class RequestBuilder {
 
     private static JsonObject createDefaultRequestWithSpecifiedPayload(JsonObject httpBody) {
         JsonObject request = new JsonObject();
-        JsonObject prefs = new JsonObject().put(TestConstants.EMAIL, TestConstants.EMAIL_DEFAULT_VALUE);
-        request.put(MessageConstants.MSG_HTTP_BODY, httpBody).put(MessageConstants.MSG_KEY_PREFS, prefs)
+        JsonObject session = new JsonObject().put(TestConstants.EMAIL, TestConstants.EMAIL_DEFAULT_VALUE);
+        request.put(MessageConstants.MSG_HTTP_BODY, httpBody).put(MessageConstants.MSG_KEY_SESSION, session)
             .put(MessageConstants.MSG_USER_ID, TestConstants.USER_ID_DEFAULT_VALUE)
             .put(MessageConstants.MSG_HEADER_TOKEN, TestConstants.HEADER_TOKEN);
         return request;
@@ -110,8 +110,8 @@ public final class RequestBuilder {
 
     private static JsonObject createAnonymousRequestWithSpecifiedPayload(JsonObject httpBody) {
         JsonObject request = new JsonObject();
-        JsonObject prefs = new JsonObject().put(TestConstants.EMAIL, TestConstants.EMAIL_DEFAULT_VALUE);
-        request.put(MessageConstants.MSG_HTTP_BODY, httpBody).put(MessageConstants.MSG_KEY_PREFS, prefs)
+        JsonObject session = new JsonObject().put(TestConstants.EMAIL, TestConstants.EMAIL_DEFAULT_VALUE);
+        request.put(MessageConstants.MSG_HTTP_BODY, httpBody).put(MessageConstants.MSG_KEY_SESSION, session)
             .put(MessageConstants.MSG_USER_ID, TestConstants.ANONYMOUS)
             .put(MessageConstants.MSG_HEADER_TOKEN, TestConstants.HEADER_TOKEN);
         return request;
@@ -119,8 +119,8 @@ public final class RequestBuilder {
 
     private static JsonObject createUnauthorizedRequestWithSpecifiedPayload(JsonObject httpBody) {
         JsonObject request = new JsonObject();
-        JsonObject prefs = new JsonObject().put(TestConstants.EMAIL, TestConstants.EMAIL_DEFAULT_VALUE);
-        request.put(MessageConstants.MSG_HTTP_BODY, httpBody).put(MessageConstants.MSG_KEY_PREFS, prefs)
+        JsonObject session = new JsonObject().put(TestConstants.EMAIL, TestConstants.EMAIL_DEFAULT_VALUE);
+        request.put(MessageConstants.MSG_HTTP_BODY, httpBody).put(MessageConstants.MSG_KEY_SESSION, session)
             .put(MessageConstants.MSG_USER_ID, UUID.randomUUID().toString())
             .put(MessageConstants.MSG_HEADER_TOKEN, TestConstants.HEADER_TOKEN);
         return request;
