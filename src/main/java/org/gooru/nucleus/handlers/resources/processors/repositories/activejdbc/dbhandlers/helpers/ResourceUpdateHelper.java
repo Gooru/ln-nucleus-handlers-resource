@@ -56,6 +56,7 @@ public final class ResourceUpdateHelper {
         ProcessorContext context) {
         ResourceMetadataHelper.flattenMetadataFields(context.request());
         ResourceTaxonomyHelper.populateGutCodes(resource, context.request());
+        ResourceLinkoutHelper.populateLinkout(resource, context.request());
 
         new DefaultOriginalResourceBuilder()
             .build(resource, context.request(), AJEntityOriginalResource.getConverterRegistry());

@@ -1,6 +1,7 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbauth.AuthorizerBuilder;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers
     .FetchResourceResponseDecorator;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers
@@ -45,7 +46,7 @@ class FetchResourceHandler implements DBHandler {
             return new ExecutionResult<>(MessageResponseFactory.createNotFoundResponse(),
                 ExecutionResult.ExecutionStatus.FAILED);
         }
-        return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+        return checkTenantAuthoriation();
     }
 
     @Override
@@ -72,6 +73,14 @@ class FetchResourceHandler implements DBHandler {
     @Override
     public boolean handlerReadOnly() {
         return true;
+    }
+
+    private ExecutionResult<MessageResponse> checkTenantAuthoriation() {
+        if (resourceHolder.isHoldingOriginalResource()) {
+            return AuthorizerBuilder.buildTenantAuthorizer(context).authorize(resourceHolder.getOriginalResource());
+        } else {
+            return AuthorizerBuilder.buildTenantResourceRefAuthorizer(context).authorize(resourceHolder.getResource());
+        }
     }
 
 }

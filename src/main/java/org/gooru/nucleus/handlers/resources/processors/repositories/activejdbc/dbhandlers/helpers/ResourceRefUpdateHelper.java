@@ -1,9 +1,11 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers;
 
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
@@ -58,13 +60,22 @@ final class ResourceRefUpdateHelper {
         if (refUpdatePayload == null || refUpdatePayload.isEmpty()) {
             return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.SUCCESSFUL);
         }
-        String query = createResourceRefUpdateStatementForGivenOriginal(resource, context, refUpdatePayload);
-        LOGGER.debug("Update ref statement: {}", query);
+        PreparedStatement ps = Base.startBatch(AJEntityResource.UPDATE_REFERENCES_OF_ORIGINAL);
         try {
-            long updatedRefCount = Base.exec(query);
-            LOGGER.info("Resource '{}' updated along with '{}' references", context.resourceId(), updatedRefCount);
+            // +1 is for the extra parameter added in query for original_content_id
+            List<Object> params = new ArrayList<>(AJEntityResource.OWNER_SPECIFIC_FIELDS.size() + 1);
+            AJEntityResource.OWNER_SPECIFIC_FIELDS.forEach(field -> {
+                // Need to update this code to handle int or other type of fields
+                // So far there is no such field hence doing String.valueOf
+                params.add(String.valueOf(resource.get(field)));
+            });
+            params.add(resource.get(AJEntityOriginalResource.ID));
+            Base.addBatch(ps, params.toArray());
+            Base.executeBatch(ps);
+            ps.close();
+            LOGGER.info("Resource '{}' updated along with references", context.resourceId());
             return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.SUCCESSFUL);
-        } catch (DBException e) {
+        } catch (DBException | SQLException e) {
             LOGGER.error("Error updating references for resource '{}'", context.resourceId(), e);
             return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse("Error from store"),
                 ExecutionResult.ExecutionStatus.FAILED);
@@ -82,44 +93,6 @@ final class ResourceRefUpdateHelper {
                 ExecutionResult.ExecutionStatus.FAILED);
         }
         return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
-    }
-
-    private static String createResourceRefUpdateStatementForGivenOriginal(AJEntityOriginalResource resource,
-        ProcessorContext context, JsonObject refUpdatePayload) {
-        StringBuilder query =
-            new StringBuilder().append("UPDATE ").append(AJEntityResource.TABLE_RESOURCE).append(" SET ");
-        Iterator<Map.Entry<String, Object>> it = refUpdatePayload.iterator();
-        for (; ; ) {
-            Map.Entry<String, Object> entry = it.next();
-            query.append(getTypedAttributeValueForQuery(entry.getKey(), String.valueOf(entry.getValue())));
-            if (it.hasNext()) {
-                query.append(", ");
-            } else {
-                break;
-            }
-        }
-        return query.append(getWhereClause(context)).toString();
-    }
-
-    private static String getWhereClause(ProcessorContext context) {
-        return " where " + AJEntityResource.ORIGINAL_CONTENT_ID + " = '" + context.resourceId() + "'::"
-            + EntityConstants.UUID_TYPE;
-    }
-
-    private static String getTypedAttributeValueForQuery(String field, String value) {
-        String type = ownerFieldNameTypeMap.get(field);
-        return " " + field + " = " + getTypedValue(value, type);
-    }
-
-    private static String getTypedValue(String value, String type) {
-        StringBuilder result = new StringBuilder();
-        if (type == null) {
-            return result.append('\'').append(value).append('\'').toString();
-        } else if (Objects.equals(type, "boolean")) {
-            return value;
-        } else {
-            return result.append('\'').append(value).append("'::").append(type).toString();
-        }
     }
 
     private static JsonObject getPayloadToUpdateRefs(JsonObject request) {

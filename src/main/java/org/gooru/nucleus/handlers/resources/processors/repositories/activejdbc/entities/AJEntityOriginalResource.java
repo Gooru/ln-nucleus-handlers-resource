@@ -61,6 +61,11 @@ public class AJEntityOriginalResource extends Model {
     public static final String VALID_CONTENT_FORMAT_FOR_RESOURCE = "resource";
     public static final String JSONB_FORMAT = "jsonb";
     public static final String UUID_TYPE = "uuid";
+    public static final String TENANT = "tenant";
+    public static final String TENANT_ROOT = "tenant_root";
+
+    public static final String PUBLISHED_FILTER = "id = ?::uuid and publish_status = 'published'::publish_status_type;";
+    private static final String PUBLISH_STATUS_PUBLISHED = "published";
 
     private static final String IFRAME_BREAKER_REASON_TYPE_NAME = "iframe_breaker_type";
     public static final List<String> RESOURCE_TYPES = Arrays
@@ -76,12 +81,24 @@ public class AJEntityOriginalResource extends Model {
         "SELECT * FROM original_resource WHERE http_domain = ? AND coalesce(http_path, 'P') = ? AND coalesce(http_query, 'Q') = ? AND "
         + "is_deleted = false and is_remote = true;";
     public static final String FETCH_RESOURCE =
-        "select id, title, url, is_remote, http_domain, is_broken, is_iframe_breaker, "
-            + "iframe_breaker_reason, creator_id, modifier_id, narration, description, publish_status, publish_date, "
-            + "subject, language, narration, description, content_subformat, audience, educational_use, metadata, "
-            + "taxonomy, thumbnail, is_copyright_owner, copyright_owner, info, visible_on_profile, display_guide,"
-            + "accessibility, license, creator_system from original_resource where id = ?::uuid and is_deleted = false";
+        "select id, title, url, is_remote, http_domain, is_broken, is_iframe_breaker, tenant, tenant_root, "
+            + "publish_status, iframe_breaker_reason, creator_id, modifier_id, narration, description, "
+            + "publish_status, publish_date, subject, language, narration, description, content_subformat, audience, "
+            + "educational_use, metadata, taxonomy, thumbnail, is_copyright_owner, copyright_owner, info, "
+            + "visible_on_profile, display_guide,accessibility, license, creator_system from original_resource where "
+            + "id = ?::uuid and is_deleted = false";
 
+    public static final String INSERT_FROM_ORIGINAL_RESOURCE =
+        "INSERT INTO archived_original_resource(id, title, url, is_remote, http_protocol, http_host, http_port, http_domain, http_path, http_query,"
+        + " is_broken, is_iframe_breaker, iframe_breaker_reason, created_at, updated_at, creator_id, modifier_id, publish_date, publish_status,"
+        + " subject, language, narration, description, content_subformat, audience, educational_use, metadata, taxonomy, gut_codes, thumbnail,"
+        + " is_copyright_owner, copyright_owner, info, visible_on_profile, display_guide, accessibility, is_deleted, editorial_tags, license,"
+        + " creator_system) SELECT id, title, url, is_remote, http_protocol, http_host, http_port, http_domain, http_path, http_query, is_broken,"
+        + " is_iframe_breaker, iframe_breaker_reason, created_at, updated_at, creator_id, modifier_id, publish_date, publish_status, subject,"
+        + " language, narration, description, content_subformat, audience, educational_use, metadata, taxonomy, gut_codes, thumbnail,"
+        + " is_copyright_owner, copyright_owner, info, visible_on_profile, display_guide, accessibility, is_deleted, editorial_tags, license,"
+        + " creator_system FROM original_resource WHERE id = ?::uuid";
+    
     public static final String FETCH_RESOURCE_FOR_BROKEN_DETECTION = "select is_remote, http_domain, is_broken, "
         + "is_iframe_breaker from original_resource where id = ?::uuid and is_deleted = false";
 
@@ -121,6 +138,8 @@ public class AJEntityOriginalResource extends Model {
         converterMap.put(RESOURCE_INFO, (FieldConverter::convertFieldToJson));
         converterMap.put(DISPLAY_GUIDE, (FieldConverter::convertFieldToJson));
         converterMap.put(ACCESSIBILITY, (FieldConverter::convertFieldToJson));
+        converterMap.put(TENANT, (fieldValue -> FieldConverter.convertFieldToUuid((String) fieldValue)));
+        converterMap.put(TENANT_ROOT, (fieldValue -> FieldConverter.convertFieldToUuid((String) fieldValue)));
 
         return Collections.unmodifiableMap(converterMap);
     }
@@ -148,6 +167,8 @@ public class AJEntityOriginalResource extends Model {
         validatorMap.put(IS_COPYRIGHT_OWNER, FieldValidator::validateBooleanIfPresent);
         validatorMap.put(CONTENT_SUBFORMAT, RESOURCE_TYPES::contains);
         validatorMap.put(IFRAME_BREAKER_REASON, IFRAME_BREAKER_TYPES::contains);
+        validatorMap.put(TENANT, (FieldValidator::validateUuid));
+        validatorMap.put(TENANT_ROOT, (FieldValidator::validateUuid));
         return Collections.unmodifiableMap(validatorMap);
     }
 
@@ -175,6 +196,36 @@ public class AJEntityOriginalResource extends Model {
 
     public static ConverterRegistry getConverterRegistry() {
         return new OriginalResourceConverterRegistry();
+    }
+
+    public void setTenant(String tenant) {
+        setFieldUsingConverter(TENANT, tenant);
+    }
+
+    public void setTenantRoot(String tenantRoot) {
+        setFieldUsingConverter(TENANT_ROOT, tenantRoot);
+    }
+
+    public String getTenant() {
+        return this.getString(TENANT);
+    }
+
+    public String getTenantRoot() {
+        return this.getString(TENANT_ROOT);
+    }
+
+    public boolean isResourcePublished() {
+        String publishStatus = this.getString(PUBLISH_STATUS);
+        return PUBLISH_STATUS_PUBLISHED.equalsIgnoreCase(publishStatus);
+    }
+
+    private void setFieldUsingConverter(String fieldName, Object fieldValue) {
+        FieldConverter fc = converterRegistry.get(fieldName);
+        if (fc != null) {
+            this.set(fieldName, fc.convertField(fieldValue));
+        } else {
+            this.set(fieldName, fieldValue);
+        }
     }
 
     private static class OriginalResourceValidatorRegistry implements ValidatorRegistry {

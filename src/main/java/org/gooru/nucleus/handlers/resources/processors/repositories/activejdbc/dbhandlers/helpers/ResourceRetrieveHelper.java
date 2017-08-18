@@ -100,7 +100,7 @@ public final class ResourceRetrieveHelper {
         return returnValue;
     }
 
-    public static JsonObject getCopiesOfAResource(AJEntityOriginalResource resource, String originalResourceId) {
+    public static JsonObject getCopiesOfAResource(String originalResourceId) {
         JsonObject returnValue = null;
 
         LazyList<AJEntityResource> result = AJEntityResource

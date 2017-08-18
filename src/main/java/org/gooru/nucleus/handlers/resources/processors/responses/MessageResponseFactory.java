@@ -2,12 +2,17 @@ package org.gooru.nucleus.handlers.resources.processors.responses;
 
 import java.util.Map;
 
+import org.gooru.nucleus.handlers.resources.constants.HttpConstants;
 import org.gooru.nucleus.handlers.resources.constants.MessageConstants;
 import org.javalite.activejdbc.Errors;
 
 import io.vertx.core.json.JsonObject;
 
 public final class MessageResponseFactory {
+
+    private static final String API_VERSION_DEPRECATED = "API version is deprecated";
+    private static final String API_VERSION_NOT_SUPPORTED = "API version is not supported";
+
     private MessageResponseFactory() {
         throw new AssertionError();
     }
@@ -95,5 +100,11 @@ public final class MessageResponseFactory {
 
     public static MessageResponse createForbiddenResponse(JsonObject responseBody) {
         return new MessageResponse.Builder().failed().setStatusForbidden().setResponseBody(responseBody).build();
+    }
+
+    public static MessageResponse createVersionDeprecatedResponse() {
+        return new MessageResponse.Builder().failed().setStatusHttpCode(HttpConstants.HttpStatus.GONE)
+            .setContentTypeJson()
+            .setResponseBody(new JsonObject().put(MessageConstants.MSG_MESSAGE, API_VERSION_DEPRECATED)).build();
     }
 }

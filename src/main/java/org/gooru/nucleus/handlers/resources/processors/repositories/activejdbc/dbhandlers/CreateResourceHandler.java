@@ -65,12 +65,7 @@ class CreateResourceHandler implements DBHandler {
                 return result;
             }
 
-            LicenseHelper.populateLicense(this.resource);
-
-            TypeHelper.setPGObject(this.resource, AJEntityOriginalResource.CREATOR_ID, EntityConstants.UUID_TYPE,
-                context.userId());
-            TypeHelper.setPGObject(this.resource, AJEntityOriginalResource.MODIFIER_ID, EntityConstants.UUID_TYPE,
-                context.userId());
+            autoPopulateFields();
 
             JsonObject resourceIdWithURLDuplicates =
                 ResourceRetrieveHelper.getDuplicateResourcesByUrl(this.resource, this.context.request());
@@ -91,6 +86,20 @@ class CreateResourceHandler implements DBHandler {
         }
 
         return AuthorizerBuilder.buildCreateAuthorizer(null).authorize(null);
+    }
+
+    private void autoPopulateFields() {
+        LicenseHelper.populateLicense(this.resource);
+
+        TypeHelper.setPGObject(this.resource, AJEntityOriginalResource.CREATOR_ID, EntityConstants.UUID_TYPE,
+            context.userId());
+        TypeHelper.setPGObject(this.resource, AJEntityOriginalResource.MODIFIER_ID, EntityConstants.UUID_TYPE,
+            context.userId());
+        this.resource.setTenant(context.tenant());
+        String tenantRoot = context.tenantRoot();
+        if (tenantRoot != null && !tenantRoot.isEmpty()) {
+            this.resource.setTenantRoot(tenantRoot);
+        }
     }
 
     @Override
