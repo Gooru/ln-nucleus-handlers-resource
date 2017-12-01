@@ -31,6 +31,7 @@ public final class ResourceUrlHelper {
                     .convertFieldToNamedType(analyzer.getProtocol(), AJEntityOriginalResource.HTTP_PROTOCOL_TYPE));
                 resource.setInteger(AJEntityOriginalResource.HTTP_PORT, analyzer.getPort());
                 resource.setString(AJEntityOriginalResource.HTTP_DOMAIN, analyzer.getDomain());
+                resource.setString(AJEntityOriginalResource.HTTP_FRAGMENT, analyzer.getFragment());
                 return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
             } catch (MalformedURLException e) {
                 return new ExecutionResult<>(MessageResponseFactory.createInvalidRequestResponse("Unable to parse URL"),
@@ -53,6 +54,8 @@ public final class ResourceUrlHelper {
         String getPath();
 
         String getQueryParams();
+        
+        String getFragment();
     }
 
     static class DefaultUrlAnalyzer implements UrlAnalyzer {
@@ -98,6 +101,11 @@ public final class ResourceUrlHelper {
         @Override
         public String getQueryParams() {
             return url.getQuery() != null ? url.getQuery().toLowerCase() : null;
+        }
+
+        @Override
+        public String getFragment() {
+            return url.getRef() != null ? url.getRef().toLowerCase() : null;
         }
     }
 }
