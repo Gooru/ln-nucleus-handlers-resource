@@ -80,12 +80,14 @@ public final class ResourceRetrieveHelper {
         if (request.getBoolean(AJEntityOriginalResource.IS_REMOTE, true)) {
             String httpPath = resource.getString(AJEntityOriginalResource.HTTP_PATH);
             String httpQuery = resource.getString(AJEntityOriginalResource.HTTP_QUERY);
+            String httpFragment = resource.getString(AJEntityOriginalResource.HTTP_FRAGMENT);
             httpPath = httpPath == null ? "P" : httpPath;
-            httpQuery= httpQuery == null ? "Q" : httpQuery;
+            httpQuery = httpQuery == null ? "Q" : httpQuery;
+            httpFragment = httpFragment == null ? "F" : httpFragment;
             
             LazyList<AJEntityOriginalResource> result = AJEntityOriginalResource
                 .findBySQL(AJEntityOriginalResource.FETCH_DUPLICATE_RESOURCES,
-                    resource.getString(AJEntityOriginalResource.HTTP_DOMAIN), httpPath, httpQuery);
+                    resource.getString(AJEntityOriginalResource.HTTP_DOMAIN), httpPath, httpQuery, httpFragment);
             LOGGER.debug("getDuplicateResourcesByURL ! : {} ", result.toString());
 
             if (!result.isEmpty()) {
