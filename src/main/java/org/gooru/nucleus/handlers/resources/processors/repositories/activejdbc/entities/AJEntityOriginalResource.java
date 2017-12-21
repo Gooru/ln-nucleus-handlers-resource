@@ -27,6 +27,7 @@ public class AJEntityOriginalResource extends Model {
     public static final String HTTP_DOMAIN = "http_domain";
     public static final String HTTP_PATH = "http_path";
     public static final String HTTP_QUERY = "http_query";
+    public static final String HTTP_FRAGMENT = "http_fragment";
     public static final String IS_BROKEN = "is_broken";
     public static final String IS_IFRAME_BREAKER = "is_iframe_breaker";
     public static final String IFRAME_BREAKER_REASON = "iframe_breaker_reason";
@@ -79,7 +80,7 @@ public class AJEntityOriginalResource extends Model {
         "select id, creator_id from original_resource where id = ?::uuid and is_deleted = false";
     public static final String FETCH_DUPLICATE_RESOURCES =
         "SELECT * FROM original_resource WHERE http_domain = ? AND coalesce(http_path, 'P') = ? AND coalesce(http_query, 'Q') = ? AND "
-        + "is_deleted = false and is_remote = true;";
+        + "coalesce(http_fragment, 'F') = ? AND is_deleted = false and is_remote = true;";
     public static final String FETCH_RESOURCE =
         "select id, title, url, is_remote, http_domain, is_broken, is_iframe_breaker, tenant, tenant_root, "
             + "publish_status, iframe_breaker_reason, creator_id, modifier_id, narration, description, "
@@ -90,14 +91,14 @@ public class AJEntityOriginalResource extends Model {
 
     public static final String INSERT_FROM_ORIGINAL_RESOURCE =
         "INSERT INTO archived_original_resource(id, title, url, is_remote, http_protocol, http_host, http_port, http_domain, http_path, http_query,"
-        + " is_broken, is_iframe_breaker, iframe_breaker_reason, created_at, updated_at, creator_id, modifier_id, publish_date, publish_status,"
-        + " subject, language, narration, description, content_subformat, audience, educational_use, metadata, taxonomy, gut_codes, thumbnail,"
-        + " is_copyright_owner, copyright_owner, info, visible_on_profile, display_guide, accessibility, is_deleted, editorial_tags, license,"
-        + " creator_system) SELECT id, title, url, is_remote, http_protocol, http_host, http_port, http_domain, http_path, http_query, is_broken,"
-        + " is_iframe_breaker, iframe_breaker_reason, created_at, updated_at, creator_id, modifier_id, publish_date, publish_status, subject,"
-        + " language, narration, description, content_subformat, audience, educational_use, metadata, taxonomy, gut_codes, thumbnail,"
-        + " is_copyright_owner, copyright_owner, info, visible_on_profile, display_guide, accessibility, is_deleted, editorial_tags, license,"
-        + " creator_system FROM original_resource WHERE id = ?::uuid";
+            + " http_fragment, is_broken, is_iframe_breaker, iframe_breaker_reason, created_at, updated_at, creator_id, modifier_id, publish_date, publish_status,"
+            + " subject, language, narration, description, content_subformat, audience, educational_use, metadata, taxonomy, gut_codes, thumbnail,"
+            + " is_copyright_owner, copyright_owner, info, visible_on_profile, display_guide, accessibility, is_deleted, editorial_tags, license,"
+            + " creator_system, tenant, tenant_root) SELECT id, title, url, is_remote, http_protocol, http_host, http_port, http_domain, http_path, http_query, http_fragment,"
+            + " is_broken, is_iframe_breaker, iframe_breaker_reason, created_at, updated_at, creator_id, modifier_id, publish_date, publish_status,"
+            + " subject, language, narration, description, content_subformat, audience, educational_use, metadata, taxonomy, gut_codes, thumbnail,"
+            + " is_copyright_owner, copyright_owner, info, visible_on_profile, display_guide, accessibility, is_deleted, editorial_tags, license,"
+            + " creator_system, tenant, tenant_root FROM original_resource WHERE id = ?::uuid";
     
     public static final String FETCH_RESOURCE_FOR_BROKEN_DETECTION = "select is_remote, http_domain, is_broken, "
         + "is_iframe_breaker from original_resource where id = ?::uuid and is_deleted = false";
