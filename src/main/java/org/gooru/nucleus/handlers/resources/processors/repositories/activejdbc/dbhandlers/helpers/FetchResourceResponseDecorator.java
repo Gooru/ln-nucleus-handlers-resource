@@ -6,7 +6,6 @@ import java.sql.SQLException;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityOriginalResource;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.entities.AJEntityResource;
 import org.javalite.activejdbc.Base;
-import org.javalite.activejdbc.LazyList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -116,58 +115,11 @@ public final class FetchResourceResponseDecorator {
                 result.getString(AJEntityResource.ID));
             return;
         }
-        LazyList<AJEntityOriginalResource> originalResources = AJEntityOriginalResource
-            .findBySQL(AJEntityOriginalResource.FETCH_RESOURCE_FOR_BROKEN_DETECTION, originalContentId);
-        if (originalResources.isEmpty()) {
-            LOGGER.warn("Not able to find original resource with id: {}", originalContentId);
-            return;
-        }
-        AJEntityOriginalResource originalResource = originalResources.get(0);
 
         JsonObject displayGuide = result.getJsonObject(AJEntityResource.DISPLAY_GUIDE);
         if (displayGuide == null) {
             displayGuide = new JsonObject();
             result.put(AJEntityResource.DISPLAY_GUIDE, displayGuide);
         }
-        boolean isRemote = originalResource.getBoolean(AJEntityOriginalResource.IS_REMOTE);
-        if (isRemote) {
-            processResourceRefBrokenStatus(resource, originalResource, result, displayGuide);
-            processResourceRefFrameBreakerStatus(resource, originalResource, result, displayGuide);
-
-        }
-
-    }
-
-    private static void processResourceRefFrameBreakerStatus(AJEntityResource resource,
-        AJEntityOriginalResource originalResource, JsonObject result, JsonObject displayGuide) {
-
-        int isFrameBreaker = displayGuide.getInteger(IS_FRAME_BREAKER, 0);
-        if (isFrameBreaker == 1) {
-            return;
-        }
-        
-        boolean originalIsFrameBreaker = originalResource.getBoolean(AJEntityOriginalResource.IS_IFRAME_BREAKER);
-        if (originalIsFrameBreaker) {
-            displayGuide.put(IS_FRAME_BREAKER, 1);
-            return;
-        }
-        String domain = originalResource.getString(AJEntityOriginalResource.HTTP_DOMAIN);
-        if (isDomainFrameBreaker(domain)) {
-            displayGuide.put(IS_FRAME_BREAKER, 1);
-        }
-    }
-
-    private static void processResourceRefBrokenStatus(AJEntityResource resource,
-        AJEntityOriginalResource originalResource, JsonObject result, JsonObject displayGuide) {
-        int isBroken = displayGuide.getInteger(AJEntityOriginalResource.IS_BROKEN, 0);
-        if (isBroken == 1) {
-            return;
-        }
-        
-        boolean originalIsBroken = originalResource.getBoolean(AJEntityOriginalResource.IS_BROKEN);
-        if (!originalIsBroken) {
-            return;
-        }
-        displayGuide.put(AJEntityOriginalResource.IS_BROKEN, isBroken);
     }
 }
