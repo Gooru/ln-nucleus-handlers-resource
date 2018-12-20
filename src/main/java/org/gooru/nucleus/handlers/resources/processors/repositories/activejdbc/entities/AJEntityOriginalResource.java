@@ -64,6 +64,7 @@ public class AJEntityOriginalResource extends Model {
     public static final String UUID_TYPE = "uuid";
     public static final String TENANT = "tenant";
     public static final String TENANT_ROOT = "tenant_root";
+    public static final String PRIMARY_LANGUAGE = "primary_language";
 
     public static final String PUBLISHED_FILTER = "id = ?::uuid and publish_status = 'published'::publish_status_type;";
     private static final String PUBLISH_STATUS_PUBLISHED = "published";
@@ -86,7 +87,7 @@ public class AJEntityOriginalResource extends Model {
             + "publish_status, iframe_breaker_reason, creator_id, modifier_id, narration, description, "
             + "publish_status, publish_date, subject, language, narration, description, content_subformat, audience, "
             + "educational_use, metadata, taxonomy, thumbnail, is_copyright_owner, copyright_owner, info, "
-            + "visible_on_profile, display_guide,accessibility, license, creator_system from original_resource where "
+            + "visible_on_profile, display_guide,accessibility, license, creator_system, primary_language from original_resource where "
             + "id = ?::uuid and is_deleted = false";
 
     public static final String INSERT_FROM_ORIGINAL_RESOURCE =
@@ -94,11 +95,11 @@ public class AJEntityOriginalResource extends Model {
             + " http_fragment, is_broken, is_iframe_breaker, iframe_breaker_reason, created_at, updated_at, creator_id, modifier_id, publish_date, publish_status,"
             + " subject, language, narration, description, content_subformat, audience, educational_use, metadata, taxonomy, gut_codes, thumbnail,"
             + " is_copyright_owner, copyright_owner, info, visible_on_profile, display_guide, accessibility, is_deleted, editorial_tags, license,"
-            + " creator_system, tenant, tenant_root) SELECT id, title, url, is_remote, http_protocol, http_host, http_port, http_domain, http_path, http_query, http_fragment,"
+            + " creator_system, tenant, tenant_root, primary_language) SELECT id, title, url, is_remote, http_protocol, http_host, http_port, http_domain, http_path, http_query, http_fragment,"
             + " is_broken, is_iframe_breaker, iframe_breaker_reason, created_at, updated_at, creator_id, modifier_id, publish_date, publish_status,"
             + " subject, language, narration, description, content_subformat, audience, educational_use, metadata, taxonomy, gut_codes, thumbnail,"
             + " is_copyright_owner, copyright_owner, info, visible_on_profile, display_guide, accessibility, is_deleted, editorial_tags, license,"
-            + " creator_system, tenant, tenant_root FROM original_resource WHERE id = ?::uuid";
+            + " creator_system, tenant, tenant_root, primary_language FROM original_resource WHERE id = ?::uuid";
     
     public static final String FETCH_RESOURCE_FOR_BROKEN_DETECTION = "select is_remote, http_domain, is_broken, "
         + "is_iframe_breaker from original_resource where id = ?::uuid and is_deleted = false";
@@ -107,7 +108,7 @@ public class AJEntityOriginalResource extends Model {
         .asList(TITLE, URL, IS_REMOTE, IS_BROKEN, IS_IFRAME_BREAKER, IFRAME_BREAKER_REASON, SUBJECT, LANGUAGE,
             NARRATION, DESCRIPTION, CONTENT_SUBFORMAT, AUDIENCE, EDUCATIONAL_USE, THUMBNAIL, METADATA, TAXONOMY,
             IS_COPYRIGHT_OWNER, COPYRIGHT_OWNER, RESOURCE_INFO, VISIBLE_ON_PROFILE, DISPLAY_GUIDE, ACCESSIBILITY,
-            LICENSE, CREATOR_SYSTEM));
+            LICENSE, CREATOR_SYSTEM, PRIMARY_LANGUAGE));
     public static final Set<String> CREATABLE_FIELDS = EDITABLE_FIELDS;
 
     public static final Set<String> MANDATORY_FIELDS = new HashSet<>(Arrays.asList(TITLE));
@@ -170,6 +171,7 @@ public class AJEntityOriginalResource extends Model {
         validatorMap.put(IFRAME_BREAKER_REASON, IFRAME_BREAKER_TYPES::contains);
         validatorMap.put(TENANT, (FieldValidator::validateUuid));
         validatorMap.put(TENANT_ROOT, (FieldValidator::validateUuid));
+        validatorMap.put(PRIMARY_LANGUAGE, FieldValidator::validateLanguageIfPresent);
         return Collections.unmodifiableMap(validatorMap);
     }
 

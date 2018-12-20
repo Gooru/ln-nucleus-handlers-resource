@@ -2,6 +2,7 @@ package org.gooru.nucleus.handlers.resources.app.components;
 
 import org.gooru.nucleus.handlers.resources.bootstrap.shutdown.Finalizer;
 import org.gooru.nucleus.handlers.resources.bootstrap.startup.Initializer;
+import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhelpers.LanguageValidator;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbutils.LicenseUtil;
 import org.gooru.nucleus.libs.tenant.bootstrap.TenantInitializer;
 
@@ -27,6 +28,7 @@ public final class UtilityManager implements Initializer, Finalizer {
     public void initializeComponent(Vertx vertx, JsonObject config) {
         TenantInitializer.initialize(DataSourceRegistry.getInstance().getDefaultDataSource());
         LicenseUtil.initialize();
+        LanguageValidator.initialize();
     }
 
 }
