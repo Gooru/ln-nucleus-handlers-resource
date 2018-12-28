@@ -42,6 +42,7 @@ public class AJEntityResource extends Model {
     public static final String IS_DELETED = "is_deleted";
     public static final String MODIFIER_ID = "modifier_id";
     public static final String LICENSE = "license";
+    public static final String PRIMARY_LANGUAGE = "primary_language";
 
     public static final String COURSE_ID = "course_id";
     public static final String UNIT_ID = "unit_id";
@@ -69,13 +70,13 @@ public class AJEntityResource extends Model {
     //    new HashSet<>(Arrays.asList(NARRATION, THUMBNAIL, METADATA, TAXONOMY, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
     public static final Set<String> EDITABLE_FIELDS = new HashSet<>(Arrays
         .asList(CONTENT_SUBFORMAT, COPYRIGHT_OWNER, DESCRIPTION, IS_COPYRIGHT_OWNER, TITLE, VISIBLE_ON_PROFILE,
-            NARRATION, THUMBNAIL, METADATA, TAXONOMY, INFO, DISPLAY_GUIDE, ACCESSIBILITY));
+            NARRATION, THUMBNAIL, METADATA, TAXONOMY, INFO, DISPLAY_GUIDE, ACCESSIBILITY, PRIMARY_LANGUAGE));
 
     public static final String FETCH_RESOURCE_BY_ID =
         " SELECT id, title, url, creator_id, modifier_id, narration, description, content_format, content_subformat, "
             + "metadata, taxonomy, original_content_id, original_creator_id, is_deleted, is_copyright_owner, "
             + "copyright_owner, visible_on_profile, thumbnail, info, display_guide, accessibility, course_id, "
-            + "unit_id, lesson_id, collection_id, license, publish_status, tenant, tenant_root FROM content WHERE id "
+            + "unit_id, lesson_id, collection_id, license, publish_status, tenant, tenant_root, primary_language FROM content WHERE id "
             + "= ?::uuid AND content_format = ?::content_format_type AND is_deleted = false";
 
     public static final String FETCH_RESOURCE_TO_DELETE =
@@ -154,6 +155,7 @@ public class AJEntityResource extends Model {
         validatorMap.put(CONTENT_SUBFORMAT, AJEntityOriginalResource.RESOURCE_TYPES::contains);
         validatorMap.put(TENANT, (FieldValidator::validateUuid));
         validatorMap.put(TENANT_ROOT, (FieldValidator::validateUuid));
+        validatorMap.put(PRIMARY_LANGUAGE, FieldValidator::validateLanguageIfPresent);
         return Collections.unmodifiableMap(validatorMap);
     }
 
