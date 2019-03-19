@@ -1,5 +1,7 @@
 package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers;
 
+import java.util.ResourceBundle;
+
 import org.gooru.nucleus.handlers.resources.processors.ProcessorContext;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbauth.AuthorizerBuilder;
 import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.helpers.*;
@@ -11,6 +13,8 @@ import org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.v
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponse;
 import org.gooru.nucleus.handlers.resources.processors.responses.MessageResponseFactory;
+import org.javalite.activejdbc.DBException;
+import org.postgresql.util.PSQLException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +23,7 @@ import io.vertx.core.json.JsonObject;
 class CreateResourceHandler implements DBHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CreateResourceHandler.class);
+    private static final ResourceBundle RESOURCE_BUNDLE = ResourceBundle.getBundle("messages");
     private final ProcessorContext context;
     private AJEntityOriginalResource resource;
 
@@ -104,25 +109,42 @@ class CreateResourceHandler implements DBHandler {
 
     @Override
     public ExecutionResult<MessageResponse> executeRequest() {
+      try {
         if (!this.resource.insert()) {
-            if (this.resource.hasErrors()) {
-                LOGGER.error("executeRequest : Create resource failed for input object. Errors: {}",
-                    this.resource.errors());
-                return new ExecutionResult<>(
-                    MessageResponseFactory.createValidationErrorResponse(this.resource.errors()),
-                    ExecutionResult.ExecutionStatus.FAILED);
-            } else {
-                LOGGER.error("executeRequest : Create resource failed for input object: {}", context.request());
-                return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
-                    ExecutionResult.ExecutionStatus.FAILED);
-            }
+          if (this.resource.hasErrors()) {
+            LOGGER.error("executeRequest : Create resource failed for input object. Errors: {}",
+                this.resource.errors());
+            return new ExecutionResult<>(
+                MessageResponseFactory.createValidationErrorResponse(this.resource.errors()),
+                ExecutionResult.ExecutionStatus.FAILED);
+          } else {
+            LOGGER.error("executeRequest : Create resource failed for input object: {}",
+                context.request());
+            return new ExecutionResult<>(MessageResponseFactory.createInternalErrorResponse(),
+                ExecutionResult.ExecutionStatus.FAILED);
+          }
         }
+      } catch (Exception e) {
+        if (e instanceof DBException && e.getCause() instanceof PSQLException
+            && ((PSQLException) e.getCause()).getSQLState().equals("22021")) {
+          LOGGER.error(
+              "executeRequest : Create resource failed for input object due to UTF8 encoding issue: {}",
+              context.request());
+          return new ExecutionResult<>(
+              MessageResponseFactory
+                  .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.textfield")),
+              ExecutionResult.ExecutionStatus.FAILED);
+        }
+        throw e;
+      }
 
-        // successful...
-        LOGGER.debug("executeRequest : Created resource ID: " + this.resource.getString(AJEntityResource.ID));
-        return new ExecutionResult<>(
-            MessageResponseFactory.createPostSuccessResponse("Location", this.resource.getString(AJEntityResource.ID)),
-            ExecutionResult.ExecutionStatus.SUCCESSFUL);
+      // successful...
+      LOGGER.debug(
+          "executeRequest : Created resource ID: " + this.resource.getString(AJEntityResource.ID));
+      return new ExecutionResult<>(
+          MessageResponseFactory.createPostSuccessResponse("Location",
+              this.resource.getString(AJEntityResource.ID)),
+          ExecutionResult.ExecutionStatus.SUCCESSFUL);
     }
 
     @Override
