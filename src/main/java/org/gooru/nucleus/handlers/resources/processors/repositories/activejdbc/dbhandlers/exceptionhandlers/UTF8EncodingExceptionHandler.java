@@ -29,6 +29,6 @@ class UTF8EncodingExceptionHandler implements ExceptionHandler {
               .createInvalidRequestResponse(RESOURCE_BUNDLE.getString("invalid.textfield")),
           ExecutionResult.ExecutionStatus.FAILED);
     }
-    return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.CONTINUE_PROCESSING);
+    return new ExecutionResult<>(null, ExecutionResult.ExecutionStatus.FAILED);
   }
 }

@@ -60,7 +60,7 @@ public final class TransactionExecutor {
       ExecutionResult<MessageResponse> executionResponse = null;
       for (ExceptionHandler exceptionHandler : EXCEPTION_HANDLERS) {
         executionResponse = exceptionHandler.handleError(e);
-        if (executionResponse.hasFailed()) {
+        if (executionResponse.result() != null) {
           break;
         }
       }
