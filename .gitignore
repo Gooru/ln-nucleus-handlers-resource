@@ -1,5 +1,10 @@
 *.class
-
+.activejdbc_instrument
+.classpath
+.project
+.settings
+bin
+*.log
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
