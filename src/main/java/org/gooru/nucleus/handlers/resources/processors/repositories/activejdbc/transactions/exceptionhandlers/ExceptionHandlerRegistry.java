@@ -1,4 +1,4 @@
-package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.exceptionhandlers;
+package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.transactions.exceptionhandlers;
 
 import java.util.ArrayList;
 import java.util.Collections;

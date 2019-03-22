@@ -1,4 +1,4 @@
-package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.dbhandlers.exceptionhandlers;
+package org.gooru.nucleus.handlers.resources.processors.repositories.activejdbc.transactions.exceptionhandlers;
 
 import java.util.ResourceBundle;
 import org.gooru.nucleus.handlers.resources.processors.responses.ExecutionResult;
